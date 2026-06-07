@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
+import { AiResponseView } from "@/components/ai-response-view";
+import type { AiStructuredResponse } from "@/lib/ai";
 
 export function AiRecommendPanel({
   locale,
@@ -13,7 +15,7 @@ export function AiRecommendPanel({
   movieTitle: string;
 }) {
   const t = useTranslations("movie");
-  const [text, setText] = useState<string | null>(null);
+  const [response, setResponse] = useState<AiStructuredResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fetchWhy = async () => {
@@ -32,7 +34,7 @@ export function AiRecommendPanel({
         }),
       });
       const data = await res.json();
-      setText(data.text);
+      setResponse(data.response);
     } finally {
       setLoading(false);
     }
@@ -47,7 +49,11 @@ export function AiRecommendPanel({
           AI
         </Button>
       </div>
-      {text && <p className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">{text}</p>}
+      {response && (
+        <div className="mt-3">
+          <AiResponseView data={response} />
+        </div>
+      )}
     </section>
   );
 }

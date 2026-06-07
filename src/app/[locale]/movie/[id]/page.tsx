@@ -21,12 +21,14 @@ import {
   parseRuntimeMinutes,
   czdbTrailers,
   splitPeople,
+  isValidCzdbMatch,
   type CzdbFilm,
 } from "@/lib/czdb";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { MovieActions } from "@/components/movie-actions";
 import { AiRecommendPanel } from "@/components/ai-recommend-panel";
+import { ReportMovieButton } from "@/components/report-movie-button";
 import { ExternalLink } from "lucide-react";
 
 export default async function MoviePage({
@@ -54,12 +56,26 @@ export default async function MoviePage({
   let cached = await prisma.movieCache.findUnique({ where: { tmdbId } });
   let czdb: CzdbFilm | null = cached?.czdbData ? JSON.parse(cached.czdbData) : null;
 
-  if (!czdb) {
+  if (czdb && !isValidCzdbMatch(czdb, { tmdbId, imdbId: movie.imdb_id, year })) {
+    czdb = null;
+  }
+
+  const stale =
+    !cached?.csfdUpdated ||
+    Date.now() - cached.csfdUpdated.getTime() > 7 * 24 * 60 * 60 * 1000;
+
+  if (!czdb || stale) {
+    const rejectedIds: number[] = cached?.rejectedCzdbIds
+      ? JSON.parse(cached.rejectedCzdbIds)
+      : [];
+
     czdb = await resolveCzdbForMovie({
       title: movie.title,
+      originalTitle: movie.original_title,
       year,
       imdbId: movie.imdb_id,
       tmdbId,
+      rejectedIds,
     });
     if (czdb) {
       await prisma.movieCache.upsert({
@@ -296,7 +312,10 @@ export default async function MoviePage({
           </section>
         )}
 
-        <MovieActions tmdbId={tmdbId} userMovie={userMovie} locale={locale} />
+        <div className="flex flex-wrap items-center gap-2">
+          <MovieActions tmdbId={tmdbId} userMovie={userMovie} locale={locale} />
+          <ReportMovieButton tmdbId={tmdbId} />
+        </div>
 
         <AiRecommendPanel locale={locale as "cs" | "en"} movieTitle={movie.title} />
       </div>

@@ -26,7 +26,7 @@
   "swipe": {
     "watched": "Watched",
     "want": "Want to watch",
-    "skip": "Skip",
+    "skip": "Not seen",
     "noMore": "That's all for today — more picks tomorrow!",
     "rateTitle": "How did you like it?",
     "notes": "Notes (optional)",
@@ -34,7 +34,8 @@
     "stars": "Stars",
     "scale": "1–10",
     "save": "Save",
-    "todayPicks": "Today's picks"
+    "todayPicks": "Today's picks",
+    "undo": "Undo last movie"
   },
   "movie": {
     "director": "Director",
@@ -48,17 +49,39 @@
     "originalTitle": "Original title",
     "englishTitle": "English title",
     "czechTitle": "Czech title",
+    "overview": "Synopsis",
     "yourRating": "Your rating",
     "imdb": "IMDb",
     "csfd": "ČSFD",
     "similar": "Similar movies",
-    "aiWhy": "Why you might like it"
+    "aiWhy": "Why you might like it",
+    "detailLink": "Movie details"
+  },
+  "report": {
+    "button": "Report error",
+    "title": "Report data error",
+    "description": "Wrong synopsis, title, or cast? We'll try to reload correct data.",
+    "reason_wrong_description": "Wrong synopsis",
+    "reason_wrong_title": "Wrong title",
+    "reason_wrong_people": "Wrong cast / crew",
+    "reason_other": "Other",
+    "notePlaceholder": "Optional note…",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "thanks": "Thanks! Data will reload."
   },
   "library": {
     "watched": "Watched",
     "want": "Want to watch",
     "all": "All",
-    "empty": "Nothing yet — start swiping!"
+    "empty": "Nothing yet — start swiping!",
+    "history": "History",
+    "historyEmpty": "No history yet — movies are saved as they pass through your feed.",
+    "historyHint": "Every movie from your feed, including skipped ones. Tap to open details or rate.",
+    "statusSeen": "In feed",
+    "statusSkipped": "Skipped",
+    "statusWant": "Want to watch",
+    "statusWatched": "Watched"
   },
   "stats": {
     "title": "Statistics",
@@ -81,7 +104,8 @@
     "title": "AI Assistant",
     "placeholder": "What to watch tonight? Something like Blade Runner…",
     "send": "Send",
-    "recommend": "Recommend 5 movies"
+    "recommend": "Recommend 5 movies",
+    "noResults": "No recommendations."
   },
   "common": {
     "loading": "Loading…",

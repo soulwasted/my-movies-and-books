@@ -1,60 +1,161 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Heart, Star, X } from "lucide-react";
+import { Eye, EyeOff, Heart, Flag, Star, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RatingDialog } from "@/components/rating-dialog";
-import { saveMovieAction } from "@/lib/actions";
-import { posterUrl, type TmdbMovieListItem } from "@/lib/tmdb";
-import { cn } from "@/lib/utils";
+import { ReportDataDialog } from "@/components/report-data-dialog";
+import { saveMovieAction, undoMovieAction, recordSeenMovieAction } from "@/lib/actions";
+import type { MovieCardSummary } from "@/lib/movie-card";
+import type { TmdbMovieListItem } from "@/lib/tmdb";
+
+type UndoState = {
+  index: number;
+  movie: TmdbMovieListItem;
+};
+
+async function fetchCardSummary(tmdbId: number): Promise<MovieCardSummary | null> {
+  const res = await fetch(`/api/movies/${tmdbId}`, { credentials: "include" });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.card ?? null;
+}
 
 export function SwipeDeck({ locale }: { locale: string }) {
   const t = useTranslations("swipe");
   const tCommon = useTranslations("common");
   const [movies, setMovies] = useState<TmdbMovieListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
   const [ratingMovie, setRatingMovie] = useState<TmdbMovieListItem | null>(null);
+  const [reportTmdbId, setReportTmdbId] = useState<number | null>(null);
+  const [cardCache, setCardCache] = useState<Map<number, MovieCardSummary>>(new Map());
+  const [cardLoading, setCardLoading] = useState(false);
+  const [undo, setUndo] = useState<UndoState | null>(null);
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadQueue = useCallback(async () => {
     setLoading(true);
+    setError(null);
+    setCardCache(new Map());
     try {
-      const res = await fetch("/api/movies/queue");
+      const res = await fetch("/api/movies/queue", { credentials: "include" });
       const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? tCommon("error"));
+        setMovies([]);
+        return;
+      }
       setMovies(data.movies ?? []);
       setIndex(0);
+      setUndo(null);
+    } catch {
+      setError(tCommon("error"));
+      setMovies([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tCommon]);
 
   useEffect(() => {
     loadQueue();
   }, [loadQueue]);
 
   const current = movies[index];
+  const currentCard = current ? cardCache.get(current.id) : null;
 
-  const advance = () => setIndex((i) => i + 1);
+  const cacheCard = useCallback((id: number, card: MovieCardSummary) => {
+    setCardCache((prev) => {
+      const next = new Map(prev);
+      next.set(id, card);
+      return next;
+    });
+  }, []);
+
+  const refreshCard = useCallback(
+    async (tmdbId: number) => {
+      setCardCache((prev) => {
+        const next = new Map(prev);
+        next.delete(tmdbId);
+        return next;
+      });
+      const card = await fetchCardSummary(tmdbId);
+      if (card) cacheCard(tmdbId, card);
+    },
+    [cacheCard],
+  );
+
+  const ensureCard = useCallback(
+    async (tmdbId: number) => {
+      const card = await fetchCardSummary(tmdbId);
+      if (card) cacheCard(tmdbId, card);
+    },
+    [cacheCard],
+  );
+
+  useEffect(() => {
+    if (!current) return;
+    let cancelled = false;
+
+    (async () => {
+      setCardLoading(true);
+      await ensureCard(current.id);
+      if (cancelled) return;
+      setCardLoading(false);
+
+      const next = movies[index + 1];
+      if (next) await ensureCard(next.id);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [current?.id, index, movies, ensureCard]);
+
+  useEffect(() => {
+    if (!current?.id || !currentCard) return;
+    void recordSeenMovieAction(current.id);
+  }, [current?.id, currentCard]);
+
+  const scheduleUndo = (state: UndoState) => {
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    setUndo(state);
+    undoTimer.current = setTimeout(() => setUndo(null), 12_000);
+  };
+
+  const advance = (movie: TmdbMovieListItem) => {
+    scheduleUndo({ index, movie });
+    setIndex((i) => i + 1);
+  };
+
+  const handleUndo = async () => {
+    if (!undo) return;
+    await undoMovieAction(undo.movie.id);
+    setIndex(undo.index);
+    setUndo(null);
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+  };
 
   const handleWant = async () => {
-    if (!current) return;
+    if (!current || !currentCard) return;
     await saveMovieAction({ tmdbId: current.id, status: "WANT" });
-    advance();
+    advance(current);
   };
 
   const handleSkip = async () => {
-    if (!current) return;
+    if (!current || !currentCard) return;
     await saveMovieAction({ tmdbId: current.id, status: "SKIPPED" });
-    advance();
+    advance(current);
   };
 
   const handleWatched = () => {
-    if (!current) return;
+    if (!current || !currentCard) return;
     setRatingMovie(current);
   };
 
@@ -71,8 +172,10 @@ export function SwipeDeck({ locale }: { locale: string }) {
       ...data,
     });
     setRatingMovie(null);
-    advance();
+    advance(ratingMovie);
   };
+
+  const actionsDisabled = !currentCard || cardLoading;
 
   if (loading) {
     return (
@@ -85,7 +188,7 @@ export function SwipeDeck({ locale }: { locale: string }) {
   if (!current) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-        <p className="text-muted-foreground">{t("noMore")}</p>
+        <p className="text-muted-foreground">{error ?? t("noMore")}</p>
         <Button onClick={loadQueue} variant="outline">
           {tCommon("retry")}
         </Button>
@@ -95,96 +198,219 @@ export function SwipeDeck({ locale }: { locale: string }) {
 
   return (
     <>
-      <div className="relative mx-auto aspect-[2/3] w-full max-w-sm flex-1">
-        <AnimatePresence mode="wait">
-          <SwipeCard key={current.id} movie={current} locale={locale} />
+      <div className="relative mx-auto w-full max-w-2xl flex-1">
+        <AnimatePresence mode="wait" initial={false}>
+          {currentCard ? (
+            <SwipeCard
+              key={current.id}
+              card={currentCard}
+              locale={locale}
+              onReport={() => setReportTmdbId(current.id)}
+            />
+          ) : (
+            <CardSkeleton key={`loading-${current.id}`} />
+          )}
         </AnimatePresence>
       </div>
 
-      <div className="mt-6 flex items-center justify-center gap-4">
-        <Button
-          size="lg"
-          variant="outline"
-          className="h-14 w-14 rounded-full border-destructive/30 text-destructive"
-          onClick={handleSkip}
-          aria-label={t("skip")}
-        >
-          <X className="h-6 w-6" />
-        </Button>
-        <Button
-          size="lg"
-          className="h-16 w-16 rounded-full bg-emerald-600 hover:bg-emerald-500"
-          onClick={handleWatched}
-          aria-label={t("watched")}
-        >
-          <Star className="h-7 w-7 fill-current" />
-        </Button>
-        <Button
-          size="lg"
-          variant="outline"
-          className="h-14 w-14 rounded-full border-pink-500/30 text-pink-400"
-          onClick={handleWant}
-          aria-label={t("want")}
-        >
-          <Heart className="h-6 w-6" />
-        </Button>
-      </div>
+      {undo && (
+        <div className="mt-3 flex justify-center">
+          <Button variant="ghost" size="sm" onClick={handleUndo} className="gap-2">
+            <Undo2 className="h-4 w-4" />
+            {t("undo")}
+          </Button>
+        </div>
+      )}
 
-      <p className="mt-4 text-center text-xs text-muted-foreground">
-        {t("skip")} · {t("watched")} · {t("want")}
-      </p>
+      <div className="sticky bottom-20 z-10 mt-4 rounded-2xl border border-border/60 bg-background/95 p-3 shadow-lg backdrop-blur-sm">
+        <div className="grid grid-cols-3 gap-2">
+          <Button
+            variant="outline"
+            disabled={actionsDisabled}
+            className="h-auto flex-col gap-1 py-3 text-destructive hover:text-destructive"
+            onClick={handleSkip}
+          >
+            <EyeOff className="h-5 w-5" />
+            <span className="text-xs font-medium">{t("skip")}</span>
+          </Button>
+          <Button
+            disabled={actionsDisabled}
+            className="h-auto flex-col gap-1 bg-emerald-600 py-3 hover:bg-emerald-500"
+            onClick={handleWatched}
+          >
+            <Star className="h-5 w-5 fill-current" />
+            <span className="text-xs font-medium">{t("watched")}</span>
+          </Button>
+          <Button
+            variant="outline"
+            disabled={actionsDisabled}
+            className="h-auto flex-col gap-1 text-pink-400 hover:text-pink-300"
+            onClick={handleWant}
+          >
+            <Heart className="h-5 w-5" />
+            <span className="text-xs font-medium">{t("want")}</span>
+          </Button>
+        </div>
+      </div>
 
       <RatingDialog
         open={!!ratingMovie}
         onOpenChange={(open) => !open && setRatingMovie(null)}
         onSave={handleRatingSave}
       />
+
+      {reportTmdbId != null && (
+        <ReportDataDialog
+          tmdbId={reportTmdbId}
+          open={reportTmdbId != null}
+          onOpenChange={(open) => !open && setReportTmdbId(null)}
+          onReported={() => refreshCard(reportTmdbId)}
+        />
+      )}
     </>
   );
 }
 
-function SwipeCard({ movie, locale }: { movie: TmdbMovieListItem; locale: string }) {
-  const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 200], [-12, 12]);
-  const poster = posterUrl(movie.poster_path, "w500");
-  const year = movie.release_date?.slice(0, 4);
+function CardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-2xl animate-pulse">
+      <div className="flex flex-col sm:flex-row">
+        <div className="flex shrink-0 items-center justify-center bg-muted/40 p-3 sm:w-44 md:w-52">
+          <div className="aspect-[2/3] w-full max-w-[160px] rounded-lg bg-muted sm:max-w-none" />
+        </div>
+        <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5">
+          <div className="h-7 w-3/4 rounded bg-muted" />
+          <div className="h-4 w-1/2 rounded bg-muted" />
+          <div className="h-4 w-full rounded bg-muted" />
+          <div className="h-4 w-full rounded bg-muted" />
+          <div className="h-4 w-2/3 rounded bg-muted" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SwipeCard({
+  card,
+  locale,
+  onReport,
+}: {
+  card: MovieCardSummary;
+  locale: string;
+  onReport: () => void;
+}) {
+  const t = useTranslations("movie");
+  const tReport = useTranslations("report");
 
   return (
     <motion.div
-      className="absolute inset-0 overflow-hidden rounded-2xl border border-border/50 bg-card shadow-2xl"
-      style={{ x, rotate }}
-      drag="x"
-      dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0.9}
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
+      className="rounded-2xl border border-border/50 bg-card shadow-2xl"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
     >
-      <Link href={`/${locale}/movie/${movie.id}`} className="block h-full">
-        <div className="relative h-[72%] w-full bg-muted">
-          {poster ? (
-            <Image src={poster} alt={movie.title} fill className="object-cover" priority />
-          ) : (
-            <div className="flex h-full items-center justify-center text-muted-foreground">
-              No poster
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
-        </div>
-        <div className="p-4">
-          <h2 className="text-xl font-bold leading-tight">{movie.title}</h2>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            {year && <span className="text-sm text-muted-foreground">{year}</span>}
-            {movie.runtime && (
-              <span className="text-sm text-muted-foreground">{movie.runtime} min</span>
+      <div className="flex flex-col sm:flex-row sm:items-start">
+        <Link
+          href={`/${locale}/movie/${card.tmdbId}`}
+          className="relative flex shrink-0 items-center justify-center bg-muted/40 p-3 sm:w-40 md:w-44"
+        >
+          <div className="relative aspect-[2/3] w-full max-w-[140px] sm:max-w-none sm:w-full">
+            {card.poster ? (
+              <Image
+                src={card.poster}
+                alt={card.czechTitle}
+                fill
+                className="rounded-lg object-contain"
+                priority
+                unoptimized={card.poster.includes("pmgstatic.com")}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                No poster
+              </div>
+            )}
+          </div>
+        </Link>
+
+        <div className="flex min-w-0 flex-1 flex-col gap-3 p-4 sm:p-5">
+          <div className="flex items-start justify-between gap-2">
+            <Link href={`/${locale}/movie/${card.tmdbId}`} className="min-w-0 flex-1">
+              <h2 className="text-xl font-bold leading-snug sm:text-2xl">{card.czechTitle}</h2>
+              {card.originalTitle !== card.czechTitle && (
+                <p className="mt-1 text-sm text-muted-foreground">{card.originalTitle}</p>
+              )}
+            </Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="shrink-0 gap-1 text-xs text-muted-foreground"
+              onClick={onReport}
+            >
+              <Flag className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{tReport("button")}</span>
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {card.year && <span className="text-sm text-muted-foreground">{card.year}</span>}
+            {card.runtime && (
+              <span className="text-sm text-muted-foreground">{card.runtime} min</span>
             )}
             <Badge variant="secondary" className="text-xs">
-              IMDb {movie.vote_average.toFixed(1)}
+              IMDb {card.voteAverage.toFixed(1)}
             </Badge>
+            {card.csfdRating != null && (
+              <Badge variant="outline" className="text-xs">
+                ČSFD {card.csfdRating}%
+              </Badge>
+            )}
           </div>
-          <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{movie.overview}</p>
+
+          {card.overview ? (
+            <div className="text-sm">
+              <span className="font-medium text-foreground">{t("overview")}: </span>
+              <p className="mt-1 leading-relaxed text-muted-foreground">{card.overview}</p>
+            </div>
+          ) : null}
+
+          {card.directors.length > 0 && (
+            <p className="text-sm">
+              <span className="font-medium text-foreground">{t("director")}: </span>
+              <span className="text-muted-foreground">{card.directors.join(", ")}</span>
+            </p>
+          )}
+
+          {card.writers.length > 0 && (
+            <p className="text-sm">
+              <span className="font-medium text-foreground">{t("writer")}: </span>
+              <span className="text-muted-foreground">{card.writers.join(", ")}</span>
+            </p>
+          )}
+
+          {card.composers.length > 0 && (
+            <p className="text-sm">
+              <span className="font-medium text-foreground">{t("composer")}: </span>
+              <span className="text-muted-foreground">{card.composers.join(", ")}</span>
+            </p>
+          )}
+
+          {card.cast.length > 0 && (
+            <p className="text-sm">
+              <span className="font-medium text-foreground">{t("cast")}: </span>
+              <span className="text-muted-foreground">{card.cast.join(", ")}</span>
+            </p>
+          )}
+
+          <Link
+            href={`/${locale}/movie/${card.tmdbId}`}
+            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            {t("detailLink")}
+          </Link>
         </div>
-      </Link>
+      </div>
     </motion.div>
   );
 }

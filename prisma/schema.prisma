@@ -8,14 +8,15 @@ datasource db {
 }
 
 model User {
-  id          String           @id
+  id          String            @id
   name        String?
-  email       String           @unique
+  email       String            @unique
   image       String?
   preferences UserPreferences?
   movies      UserMovie[]
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  dataReports MovieDataReport[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 }
 
 model UserPreferences {
@@ -30,6 +31,7 @@ model UserPreferences {
 }
 
 enum MovieStatus {
+  SEEN
   WATCHED
   WANT
   SKIPPED
@@ -56,15 +58,30 @@ model UserMovie {
 
   @@unique([userId, tmdbId])
   @@index([userId, status])
+  @@index([userId, updatedAt])
 }
 
 model MovieCache {
-  tmdbId      Int       @id
-  data        String
-  csfdRating  Float?
-  csfdUrl     String?
-  czdbId      Int?
-  czdbData    String?
-  csfdUpdated DateTime?
-  updatedAt   DateTime  @updatedAt
+  tmdbId           Int       @id
+  data             String
+  csfdRating       Float?
+  csfdUrl          String?
+  czdbId           Int?
+  czdbData         String?
+  rejectedCzdbIds  String    @default("[]")
+  csfdUpdated      DateTime?
+  updatedAt        DateTime  @updatedAt
+}
+
+model MovieDataReport {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tmdbId    Int
+  reason    String
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([tmdbId])
+  @@index([userId])
 }

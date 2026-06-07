@@ -5,11 +5,17 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Send } from "lucide-react";
+import { AiResponseView } from "@/components/ai-response-view";
+import type { AiStructuredResponse } from "@/lib/ai";
+
+type ChatMessage =
+  | { role: "user"; text: string }
+  | { role: "ai"; response: AiStructuredResponse };
 
 export function AiChatClient({ locale }: { locale: string }) {
   const t = useTranslations("ai");
   const [message, setMessage] = useState("");
-  const [history, setHistory] = useState<Array<{ role: "user" | "ai"; text: string }>>([]);
+  const [history, setHistory] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
 
   const send = async (text: string) => {
@@ -24,7 +30,7 @@ export function AiChatClient({ locale }: { locale: string }) {
         body: JSON.stringify({ type: "chat", locale, message: text }),
       });
       const data = await res.json();
-      setHistory((h) => [...h, { role: "ai", text: data.text }]);
+      setHistory((h) => [...h, { role: "ai", response: data.response }]);
     } finally {
       setLoading(false);
     }
@@ -39,7 +45,7 @@ export function AiChatClient({ locale }: { locale: string }) {
         body: JSON.stringify({ type: "recommend", locale }),
       });
       const data = await res.json();
-      setHistory((h) => [...h, { role: "ai", text: data.text }]);
+      setHistory((h) => [...h, { role: "ai", response: data.response }]);
     } finally {
       setLoading(false);
     }
@@ -62,7 +68,11 @@ export function AiChatClient({ locale }: { locale: string }) {
                 : "mr-8 bg-muted text-muted-foreground"
             }`}
           >
-            {msg.text}
+            {msg.role === "user" ? (
+              msg.text
+            ) : (
+              <AiResponseView data={msg.response} />
+            )}
           </div>
         ))}
         {loading && <p className="text-sm text-muted-foreground">…</p>}

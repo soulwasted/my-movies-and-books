@@ -1,4 +1,4 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 
 export async function getSessionUserId(): Promise<string | null> {
@@ -14,26 +14,34 @@ export async function requireUserId(): Promise<string> {
 }
 
 export async function ensureUser(clerkId: string) {
-  const clerkUser = await currentUser();
-  if (!clerkUser) return null;
+  let email = `${clerkId}@users.clerk.dev`;
+  let name: string | null = null;
+  let image: string | null = null;
 
-  const email =
-    clerkUser.emailAddresses[0]?.emailAddress ?? `${clerkId}@users.clerk.dev`;
-  const name =
-    [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || null;
+  const clerkUser = await currentUser();
+  if (clerkUser) {
+    email =
+      clerkUser.emailAddresses[0]?.emailAddress ?? email;
+    name =
+      [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") ||
+      null;
+    image = clerkUser.imageUrl;
+  } else {
+    try {
+      const client = await clerkClient();
+      const fetched = await client.users.getUser(clerkId);
+      email = fetched.emailAddresses[0]?.emailAddress ?? email;
+      name =
+        [fetched.firstName, fetched.lastName].filter(Boolean).join(" ") || null;
+      image = fetched.imageUrl;
+    } catch {
+      // Keep placeholder email — user row still required for FK relations.
+    }
+  }
 
   return prisma.user.upsert({
     where: { id: clerkId },
-    create: {
-      id: clerkId,
-      email,
-      name,
-      image: clerkUser.imageUrl,
-    },
-    update: {
-      email,
-      name,
-      image: clerkUser.imageUrl,
-    },
+    create: { id: clerkId, email, name, image },
+    update: { email, name, image },
   });
 }

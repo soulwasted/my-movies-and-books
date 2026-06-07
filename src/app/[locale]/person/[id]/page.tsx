@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { setRequestLocale } from "next-intl/server";
 import { getPersonDetails, profileUrl, isTmdbConfigured } from "@/lib/tmdb";
-import { explainPersonFilms } from "@/lib/ai";
+import { explainPersonFilms, formatAiResponseText } from "@/lib/ai";
 import { Badge } from "@/components/ui/badge";
 
 export default async function PersonPage({
@@ -55,11 +55,13 @@ export default async function PersonPage({
 
   const aiTip =
     unwatched.length > 0
-      ? await explainPersonFilms(
-          person.name,
-          person.known_for_department,
-          unwatched,
-          locale as "cs" | "en",
+      ? formatAiResponseText(
+          await explainPersonFilms(
+            person.name,
+            person.known_for_department,
+            unwatched,
+            locale as "cs" | "en",
+          ),
         )
       : "";
 

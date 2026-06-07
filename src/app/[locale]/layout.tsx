@@ -25,7 +25,7 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider messages={messages}>
-      <div className="mx-auto flex min-h-full w-full max-w-lg flex-1 flex-col">
+      <div className="mx-auto flex min-h-full w-full max-w-2xl flex-1 flex-col">
         {children}
         {userId && <AppNav locale={locale} />}
       </div>

@@ -24,7 +24,7 @@
     "minGenres": "Vyber alespoň 3 žánry"
   },
   "swipe": {
-    "watched": "Viděl jsem",
+    "watched": "Viděl",
     "want": "Chci vidět",
     "skip": "Neviděl",
     "noMore": "Pro dnešek to stačí — zítra přidáme další!",
@@ -34,7 +34,8 @@
     "stars": "Hvězdičky",
     "scale": "1–10",
     "save": "Uložit",
-    "todayPicks": "Dnešní tipy"
+    "todayPicks": "Dnešní tipy",
+    "undo": "Vrátit předchozí film"
   },
   "movie": {
     "director": "Režie",
@@ -48,17 +49,39 @@
     "originalTitle": "Originální název",
     "englishTitle": "Anglický název",
     "czechTitle": "Český název",
+    "overview": "Popis",
     "yourRating": "Tvé hodnocení",
     "imdb": "IMDb",
     "csfd": "ČSFD",
     "similar": "Podobné filmy",
-    "aiWhy": "Proč by se ti líbil"
+    "aiWhy": "Proč by se ti líbil",
+    "detailLink": "Detail filmu"
+  },
+  "report": {
+    "button": "Nahlásit chybu",
+    "title": "Nahlásit chybu v datech",
+    "description": "Popis, název nebo herci nesedí? Po nahlášení zkusíme načíst správná data.",
+    "reason_wrong_description": "Špatný popis",
+    "reason_wrong_title": "Špatný název",
+    "reason_wrong_people": "Špatní herci / režie",
+    "reason_other": "Jiné",
+    "notePlaceholder": "Volitelná poznámka…",
+    "submit": "Odeslat",
+    "cancel": "Zrušit",
+    "thanks": "Díky! Data se znovu načtou."
   },
   "library": {
     "watched": "Viděno",
     "want": "Chci vidět",
     "all": "Vše",
-    "empty": "Zatím nic — začni swipovat!"
+    "empty": "Zatím nic — začni swipovat!",
+    "history": "Historie",
+    "historyEmpty": "Historie je prázdná — filmy se ukládají, jak procházejí nabídkou.",
+    "historyHint": "Všechny filmy z nabídky včetně přeskočených. Klikni a vrať se k detailu nebo ohodnocení.",
+    "statusSeen": "Prošlo nabídkou",
+    "statusSkipped": "Neviděl",
+    "statusWant": "Chci vidět",
+    "statusWatched": "Viděl jsem"
   },
   "stats": {
     "title": "Statistiky",
@@ -81,7 +104,8 @@
     "title": "AI asistent",
     "placeholder": "Co dnes večer? Něco jako Blade Runner…",
     "send": "Odeslat",
-    "recommend": "Doporuč mi 5 filmů"
+    "recommend": "Doporuč mi 5 filmů",
+    "noResults": "Bez doporučení."
   },
   "common": {
     "loading": "Načítám…",

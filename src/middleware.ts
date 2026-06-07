@@ -8,15 +8,24 @@ const isPublicRoute = createRouteMatcher([
   "/(cs|en)/sign-in(.*)",
   "/(cs|en)/sign-up(.*)",
   "/(cs|en)/login(.*)",
+  "/api/genres",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
   if (!isPublicRoute(req)) {
     await auth.protect();
   }
+
+  if (req.nextUrl.pathname.startsWith("/api")) {
+    return;
+  }
+
   return intlMiddleware(req);
 });
 
 export const config = {
-  matcher: ["/((?!api|_next|_vercel|.*\\..*).*)"],
+  matcher: [
+    "/((?!_next|_vercel|.*\\..*).*)",
+    "/api/(.*)",
+  ],
 };

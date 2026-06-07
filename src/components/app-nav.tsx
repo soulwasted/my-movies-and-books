@@ -30,7 +30,7 @@ export function AppNav({ locale }: { locale: string }) {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 border-t border-border/60 bg-background/90 px-2 py-2 backdrop-blur-lg">
+    <nav className="fixed bottom-0 left-1/2 z-50 w-full max-w-2xl -translate-x-1/2 border-t border-border/60 bg-background/90 px-2 py-2 backdrop-blur-lg">
       <div className="flex items-center justify-around">
         {links.map(({ href, icon: Icon, label, match }) => {
           const active = match.test(pathname);

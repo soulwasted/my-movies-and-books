@@ -72,13 +72,13 @@ export async function POST(req: Request) {
   const profile = await buildProfile(userId, locale);
 
   if (body.type === "recommend") {
-    const text = await getRecommendations(profile, 5);
-    return NextResponse.json({ text });
+    const response = await getRecommendations(profile, 5);
+    return NextResponse.json({ response });
   }
 
   if (body.type === "chat" && body.message) {
-    const text = await chatAboutMovies(body.message, profile);
-    return NextResponse.json({ text });
+    const response = await chatAboutMovies(body.message, profile);
+    return NextResponse.json({ response });
   }
 
   return NextResponse.json({ error: "Invalid type" }, { status: 400 });

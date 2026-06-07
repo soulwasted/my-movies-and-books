@@ -4,8 +4,10 @@ import { getMovieDetails, isTmdbConfigured } from "@/lib/tmdb";
 import {
   resolveCzdbForMovie,
   parseCzdbRating,
+  splitPeople,
   type CzdbFilm,
 } from "@/lib/czdb";
+import { buildMovieCardSummary } from "@/lib/movie-card";
 import { NextResponse } from "next/server";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -45,16 +47,25 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   if (stale || !czdbFilm) {
     const year = movieData.release_date?.slice(0, 4);
+    const rejectedIds: number[] = cached?.rejectedCzdbIds
+      ? JSON.parse(cached.rejectedCzdbIds)
+      : [];
+
     czdbFilm = await resolveCzdbForMovie({
       title: movieData.title,
+      originalTitle: movieData.original_title,
       year,
       imdbId: movieData.imdb_id,
       tmdbId,
+      rejectedIds,
     });
 
     if (czdbFilm) {
       csfdRating = parseCzdbRating(czdbFilm.hodnoceni);
       csfdUrl = czdbFilm.csfd_url;
+    } else {
+      csfdRating = null;
+      csfdUrl = null;
     }
 
     await prisma.movieCache.upsert({
@@ -66,6 +77,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         csfdUrl,
         czdbId: czdbFilm?.id ?? null,
         czdbData: czdbFilm ? JSON.stringify(czdbFilm) : null,
+        rejectedCzdbIds: JSON.stringify(rejectedIds),
         csfdUpdated: new Date(),
       },
       update: {
@@ -88,6 +100,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   return NextResponse.json({
     movie: movieData,
+    card: buildMovieCardSummary(movieData, czdbFilm),
     csfdRating,
     csfdUrl,
     czdb: czdbFilm,

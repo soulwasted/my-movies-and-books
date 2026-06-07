@@ -33,6 +33,70 @@ export async function saveMovieAction(input: {
   });
 
   revalidatePath("/");
+  revalidatePath("/library");
+}
+
+/** Zaznamená film zobrazený ve swipe frontě (bez přepsání rozhodnutí uživatele). */
+export async function recordSeenMovieAction(tmdbId: number) {
+  const userId = await requireUserId();
+  const existing = await prisma.userMovie.findUnique({
+    where: { userId_tmdbId: { userId, tmdbId } },
+  });
+  if (existing) return;
+  await prisma.userMovie.create({
+    data: { userId, tmdbId, status: "SEEN" },
+  });
+}
+
+export async function undoMovieAction(tmdbId: number) {
+  const userId = await requireUserId();
+  await prisma.userMovie.deleteMany({
+    where: { userId, tmdbId },
+  });
+  revalidatePath("/");
+  revalidatePath("/library");
+}
+
+export async function reportMovieDataAction(input: {
+  tmdbId: number;
+  reason: "wrong_description" | "wrong_title" | "wrong_people" | "other";
+  note?: string;
+}) {
+  const userId = await requireUserId();
+
+  await prisma.movieDataReport.create({
+    data: {
+      userId,
+      tmdbId: input.tmdbId,
+      reason: input.reason,
+      note: input.note?.trim() || null,
+    },
+  });
+
+  const cached = await prisma.movieCache.findUnique({ where: { tmdbId: input.tmdbId } });
+  const rejectedIds: number[] = cached?.rejectedCzdbIds
+    ? JSON.parse(cached.rejectedCzdbIds)
+    : [];
+
+  if (cached?.czdbId && !rejectedIds.includes(cached.czdbId)) {
+    rejectedIds.push(cached.czdbId);
+  }
+
+  if (cached) {
+    await prisma.movieCache.update({
+      where: { tmdbId: input.tmdbId },
+      data: {
+        czdbId: null,
+        czdbData: null,
+        csfdRating: null,
+        csfdUrl: null,
+        rejectedCzdbIds: JSON.stringify(rejectedIds),
+        csfdUpdated: new Date(0),
+      },
+    });
+  }
+
+  return { ok: true };
 }
 
 export async function savePreferencesAction(input: {
@@ -60,6 +124,7 @@ export async function savePreferencesAction(input: {
   });
 
   revalidatePath("/");
+  revalidatePath("/library");
 }
 
 export async function getUserStats() {

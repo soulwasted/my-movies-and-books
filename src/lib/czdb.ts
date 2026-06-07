@@ -109,22 +109,85 @@ function pickBestMatch(results: CzdbFilm[], imdbId: string): CzdbFilm | null {
   return movie ?? results[0] ?? null;
 }
 
+export function isValidCzdbMatch(
+  film: CzdbFilm,
+  options: { tmdbId?: number; imdbId?: string | null; year?: string },
+): boolean {
+  if (options.tmdbId && film.tmdb_id && film.tmdb_id !== options.tmdbId) {
+    return false;
+  }
+  if (options.imdbId && film.imdb_id && film.imdb_id !== "N/A" && film.imdb_id !== options.imdbId) {
+    return false;
+  }
+  if (options.year && film.rok) {
+    const diff = Math.abs(parseInt(options.year, 10) - film.rok);
+    if (diff > 1 && !(options.tmdbId && film.tmdb_id === options.tmdbId)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function pickFromResults(
+  results: CzdbFilm[],
+  options: {
+    tmdbId?: number;
+    imdbId?: string | null;
+    year?: string;
+    rejectedIds?: number[];
+  },
+): CzdbFilm | null {
+  const rejected = new Set(options.rejectedIds ?? []);
+  const candidates = results.filter((r) => !rejected.has(r.id));
+
+  if (options.imdbId) {
+    const byImdb = candidates.find((r) => r.imdb_id === options.imdbId);
+    if (byImdb) return byImdb;
+  }
+  if (options.tmdbId) {
+    const byTmdb = candidates.find((r) => r.tmdb_id === options.tmdbId);
+    if (byTmdb) return byTmdb;
+  }
+
+  const validated = candidates.filter((r) => isValidCzdbMatch(r, options));
+  if (validated.length === 0) return null;
+
+  const movie = validated.find((r) => r.typ === "movie");
+  return movie ?? validated[0] ?? null;
+}
+
 /** Resolve CZDB data for a TMDB movie (best-effort chain) */
 export async function resolveCzdbForMovie(options: {
   title: string;
+  originalTitle?: string;
   year?: string;
   imdbId?: string | null;
   tmdbId?: number;
+  rejectedIds?: number[];
 }): Promise<CzdbFilm | null> {
+  const searchTitles = [
+    options.title,
+    options.originalTitle,
+  ].filter((t, i, arr) => t && arr.indexOf(t) === i) as string[];
+
   if (options.imdbId) {
-    const byImdb = await searchCzdbByImdb(options.imdbId);
-    if (byImdb) return byImdb;
+    const data = await czdbFetch({ i: options.imdbId });
+    if (data) {
+      const match = pickFromResults(data.results, options);
+      if (match) return match;
+    }
   }
-  if (options.tmdbId && options.title) {
-    const byTmdb = await searchCzdbByTmdb(options.tmdbId, options.title, options.year);
-    if (byTmdb) return byTmdb;
+
+  for (const title of searchTitles) {
+    const params: Record<string, string> = { q: title };
+    if (options.year) params.y = options.year;
+    const data = await czdbFetch(params);
+    if (!data) continue;
+    const match = pickFromResults(data.results, options);
+    if (match) return match;
   }
-  return searchCzdbByTitle(options.title, options.year);
+
+  return null;
 }
 
 export function czdbTrailers(film: CzdbFilm): Array<{ name: string; url: string }> {

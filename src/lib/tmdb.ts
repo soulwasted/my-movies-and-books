@@ -142,7 +142,8 @@ export async function discoverMovies(options: {
     include_adult: "false",
   };
   if (options.genreIds?.length) {
-    params.with_genres = options.genreIds.join(",");
+    // TMDB: comma = AND (too narrow), pipe = OR (match any selected genre)
+    params.with_genres = options.genreIds.join("|");
   }
   return tmdbFetch("/discover/movie", params);
 }
@@ -173,6 +174,14 @@ export function getCzechTitle(movie: TmdbMovieDetail): string | null {
     (t) => t.iso_639_1 === "cs" || t.iso_3166_1 === "CZ",
   );
   return cs?.data.title ?? null;
+}
+
+export function getCzechOverview(movie: TmdbMovieDetail): string | null {
+  const cs = movie.translations?.translations.find(
+    (t) => t.iso_639_1 === "cs" || t.iso_3166_1 === "CZ",
+  );
+  const overview = cs?.data.overview?.trim();
+  return overview || null;
 }
 
 export function getDirectors(movie: TmdbMovieDetail) {

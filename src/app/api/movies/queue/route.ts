@@ -62,7 +62,16 @@ export async function GET() {
     }
 
     pool = shuffle([...merged.values()]).slice(0, 20);
+
+    if (pool.length === 0) {
+      const fallback = await getTrending(1);
+      pool = fallback.results.filter((m) => !exclude.has(m.id)).slice(0, 20);
+    }
   } catch {
+    pool = DEMO_MOVIES.filter((m) => !exclude.has(m.id));
+  }
+
+  if (pool.length === 0) {
     pool = DEMO_MOVIES.filter((m) => !exclude.has(m.id));
   }
 
