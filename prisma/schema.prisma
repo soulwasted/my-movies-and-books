@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String           @id
+  name        String?
+  email       String           @unique
+  image       String?
+  preferences UserPreferences?
+  movies      UserMovie[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model UserPreferences {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  locale             String   @default("cs")
+  favoriteGenreIds   String   @default("[]")
+  onboardingComplete Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+enum MovieStatus {
+  WATCHED
+  WANT
+  SKIPPED
+}
+
+enum RatingType {
+  STARS
+  SCALE
+}
+
+model UserMovie {
+  id         String       @id @default(cuid())
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tmdbId     Int
+  status     MovieStatus
+  rating     Float?
+  ratingType RatingType?
+  notes      String?
+  tags       String       @default("[]")
+  watchedAt  DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@unique([userId, tmdbId])
+  @@index([userId, status])
+}
+
+model MovieCache {
+  tmdbId      Int       @id
+  data        String
+  csfdRating  Float?
+  csfdUrl     String?
+  czdbId      Int?
+  czdbData    String?
+  csfdUpdated DateTime?
+  updatedAt   DateTime  @updatedAt
+}

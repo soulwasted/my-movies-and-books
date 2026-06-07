@@ -1,0 +1,91 @@
+{
+  "app": {
+    "name": "Media Diary",
+    "tagline": "Your movie diary with AI"
+  },
+  "nav": {
+    "home": "Home",
+    "discover": "Discover",
+    "library": "My Movies",
+    "stats": "Stats",
+    "settings": "Settings",
+    "ai": "AI Assistant"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "welcome": "Welcome to Media Diary",
+    "subtitle": "Track movies, swipe new picks, and let AI recommend what's next."
+  },
+  "onboarding": {
+    "title": "What do you enjoy?",
+    "subtitle": "Pick favorite genres — we'll serve films based on your taste.",
+    "continue": "Continue",
+    "minGenres": "Select at least 3 genres"
+  },
+  "swipe": {
+    "watched": "Watched",
+    "want": "Want to watch",
+    "skip": "Skip",
+    "noMore": "That's all for today — more picks tomorrow!",
+    "rateTitle": "How did you like it?",
+    "notes": "Notes (optional)",
+    "tags": "Tags (comma-separated)",
+    "stars": "Stars",
+    "scale": "1–10",
+    "save": "Save",
+    "todayPicks": "Today's picks"
+  },
+  "movie": {
+    "director": "Director",
+    "writer": "Writer",
+    "cast": "Cast",
+    "composer": "Music",
+    "year": "Year",
+    "runtime": "Runtime",
+    "genres": "Genres",
+    "trailers": "Trailers",
+    "originalTitle": "Original title",
+    "englishTitle": "English title",
+    "czechTitle": "Czech title",
+    "yourRating": "Your rating",
+    "imdb": "IMDb",
+    "csfd": "ČSFD",
+    "similar": "Similar movies",
+    "aiWhy": "Why you might like it"
+  },
+  "library": {
+    "watched": "Watched",
+    "want": "Want to watch",
+    "all": "All",
+    "empty": "Nothing yet — start swiping!"
+  },
+  "stats": {
+    "title": "Statistics",
+    "watched": "Watched",
+    "want": "Want to watch",
+    "avgRating": "Average rating"
+  },
+  "discover": {
+    "title": "Discover",
+    "search": "Search movies…",
+    "filterGenre": "Genre"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "genres": "Edit genres",
+    "booksSoon": "Books — coming soon"
+  },
+  "ai": {
+    "title": "AI Assistant",
+    "placeholder": "What to watch tonight? Something like Blade Runner…",
+    "send": "Send",
+    "recommend": "Recommend 5 movies"
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "retry": "Retry"
+  }
+}

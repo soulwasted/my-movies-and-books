@@ -1,0 +1,91 @@
+{
+  "app": {
+    "name": "Media Diary",
+    "tagline": "Tvůj filmový deník s AI"
+  },
+  "nav": {
+    "home": "Domů",
+    "discover": "Objevovat",
+    "library": "Moje filmy",
+    "stats": "Statistiky",
+    "settings": "Nastavení",
+    "ai": "AI asistent"
+  },
+  "auth": {
+    "signIn": "Přihlásit se",
+    "signOut": "Odhlásit se",
+    "welcome": "Vítej v Media Diary",
+    "subtitle": "Zaznamenávej filmy, swipeuj nové a nech AI doporučovat další."
+  },
+  "onboarding": {
+    "title": "Co tě baví?",
+    "subtitle": "Vyber oblíbené žánry — podle nich ti budeme servírovat filmy.",
+    "continue": "Pokračovat",
+    "minGenres": "Vyber alespoň 3 žánry"
+  },
+  "swipe": {
+    "watched": "Viděl jsem",
+    "want": "Chci vidět",
+    "skip": "Neviděl",
+    "noMore": "Pro dnešek to stačí — zítra přidáme další!",
+    "rateTitle": "Jak se ti líbil?",
+    "notes": "Poznámka (volitelné)",
+    "tags": "Štítky (čárkou oddělené)",
+    "stars": "Hvězdičky",
+    "scale": "1–10",
+    "save": "Uložit",
+    "todayPicks": "Dnešní tipy"
+  },
+  "movie": {
+    "director": "Režie",
+    "writer": "Scénář",
+    "cast": "Herci",
+    "composer": "Hudba",
+    "year": "Rok",
+    "runtime": "Délka",
+    "genres": "Žánry",
+    "trailers": "Trailery",
+    "originalTitle": "Originální název",
+    "englishTitle": "Anglický název",
+    "czechTitle": "Český název",
+    "yourRating": "Tvé hodnocení",
+    "imdb": "IMDb",
+    "csfd": "ČSFD",
+    "similar": "Podobné filmy",
+    "aiWhy": "Proč by se ti líbil"
+  },
+  "library": {
+    "watched": "Viděno",
+    "want": "Chci vidět",
+    "all": "Vše",
+    "empty": "Zatím nic — začni swipovat!"
+  },
+  "stats": {
+    "title": "Statistiky",
+    "watched": "Viděno",
+    "want": "Chci vidět",
+    "avgRating": "Průměrné hodnocení"
+  },
+  "discover": {
+    "title": "Objevovat",
+    "search": "Hledat film…",
+    "filterGenre": "Žánr"
+  },
+  "settings": {
+    "title": "Nastavení",
+    "language": "Jazyk",
+    "genres": "Upravit žánry",
+    "booksSoon": "Knihy — brzy"
+  },
+  "ai": {
+    "title": "AI asistent",
+    "placeholder": "Co dnes večer? Něco jako Blade Runner…",
+    "send": "Odeslat",
+    "recommend": "Doporuč mi 5 filmů"
+  },
+  "common": {
+    "loading": "Načítám…",
+    "error": "Něco se pokazilo",
+    "retry": "Zkusit znovu"
+  }
+}
