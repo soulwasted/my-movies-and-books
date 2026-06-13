@@ -162,11 +162,13 @@ export async function getTrending(page = 1) {
   });
 }
 
-export async function searchMovies(query: string) {
-  return tmdbFetch<{ results: TmdbMovieListItem[] }>("/search/movie", {
+export async function searchMovies(query: string, year?: number) {
+  const params: Record<string, string> = {
     language: "cs-CZ",
     query,
-  });
+  };
+  if (year) params.primary_release_year = String(year);
+  return tmdbFetch<{ results: TmdbMovieListItem[] }>("/search/movie", params);
 }
 
 export function getCzechTitle(movie: TmdbMovieDetail): string | null {

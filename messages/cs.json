@@ -1,12 +1,12 @@
 {
   "app": {
     "name": "Media Diary",
-    "tagline": "Tvůj filmový deník s AI"
+    "tagline": "Tvůj filmový a knižní deník s AI"
   },
   "nav": {
     "home": "Domů",
     "discover": "Objevovat",
-    "library": "Moje filmy",
+    "library": "Knihovna",
     "stats": "Statistiky",
     "settings": "Nastavení",
     "ai": "AI asistent"
@@ -15,13 +15,25 @@
     "signIn": "Přihlásit se",
     "signOut": "Odhlásit se",
     "welcome": "Vítej v Media Diary",
-    "subtitle": "Zaznamenávej filmy, swipeuj nové a nech AI doporučovat další."
+    "subtitle": "Zaznamenávej filmy a knihy, swipeuj nové a nech AI doporučovat další."
+  },
+  "home": {
+    "todayPicks": "Dnešní tipy",
+    "subtitle": "Swipe · hodnoť · objevuj",
+    "movies": "Filmy",
+    "books": "Knihy"
   },
   "onboarding": {
-    "title": "Co tě baví?",
+    "title": "Co tě baví ve filmech?",
     "subtitle": "Vyber oblíbené žánry — podle nich ti budeme servírovat filmy.",
+    "bookTitle": "A co v knihách?",
+    "bookSubtitle": "Vyber oblíbené kategorie — podle nich ti budeme servírovat knihy.",
     "continue": "Pokračovat",
-    "minGenres": "Vyber alespoň 3 žánry"
+    "back": "Zpět",
+    "finish": "Dokončit",
+    "step": "Krok {current} / {total}",
+    "minGenres": "Vyber alespoň 3 žánry",
+    "minCategories": "Vyber alespoň 3 kategorie"
   },
   "swipe": {
     "watched": "Viděl",
@@ -32,10 +44,18 @@
     "notes": "Poznámka (volitelné)",
     "tags": "Štítky (čárkou oddělené)",
     "stars": "Hvězdičky",
+    "starsZero": "0 hvězdiček",
     "scale": "1–10",
     "save": "Uložit",
     "todayPicks": "Dnešní tipy",
     "undo": "Vrátit předchozí film"
+  },
+  "bookSwipe": {
+    "read": "Přečteno",
+    "want": "Chci číst",
+    "skip": "Přeskočit",
+    "noMore": "Pro dnešek to stačí — zítra přidáme další knihy!",
+    "undo": "Vrátit předchozí knihu"
   },
   "movie": {
     "director": "Režie",
@@ -57,6 +77,17 @@
     "aiWhy": "Proč by se ti líbil",
     "detailLink": "Detail filmu"
   },
+  "book": {
+    "authors": "Autoři",
+    "year": "Rok",
+    "pages": "stran",
+    "publisher": "Vydavatel",
+    "overview": "Popis",
+    "czechTitle": "Český název",
+    "databazeKnih": "Databáze knih",
+    "aiWhy": "Proč by se ti líbila",
+    "detailLink": "Detail knihy"
+  },
   "report": {
     "button": "Nahlásit chybu",
     "title": "Nahlásit chybu v datech",
@@ -70,42 +101,79 @@
     "cancel": "Zrušit",
     "thanks": "Díky! Data se znovu načtou."
   },
+  "bookReport": {
+    "button": "Nahlásit chybu",
+    "title": "Nahlásit chybu v datech",
+    "description": "Popis, název nebo autor nesedí? Po nahlášení zkusíme načíst správná data.",
+    "reason_wrong_description": "Špatný popis",
+    "reason_wrong_title": "Špatný název",
+    "reason_wrong_author": "Špatný autor",
+    "reason_other": "Jiné",
+    "notePlaceholder": "Volitelná poznámka…",
+    "submit": "Odeslat",
+    "cancel": "Zrušit",
+    "thanks": "Díky! Data se znovu načtou."
+  },
   "library": {
     "watched": "Viděno",
     "want": "Chci vidět",
-    "all": "Vše",
+    "read": "Přečteno",
+    "wantRead": "Chci číst",
+    "movies": "Filmy",
+    "books": "Knihy",
+    "all": "Knihovna",
     "empty": "Zatím nic — začni swipovat!",
+    "bookEmpty": "Zatím žádné knihy — začni swipovat!",
     "history": "Historie",
     "historyEmpty": "Historie je prázdná — filmy se ukládají, jak procházejí nabídkou.",
+    "bookHistoryEmpty": "Historie je prázdná — knihy se ukládají, jak procházejí nabídkou.",
     "historyHint": "Všechny filmy z nabídky včetně přeskočených. Klikni a vrať se k detailu nebo ohodnocení.",
+    "bookHistoryHint": "Všechny knihy z nabídky včetně přeskočených. Klikni a vrať se k detailu nebo ohodnocení.",
     "statusSeen": "Prošlo nabídkou",
     "statusSkipped": "Neviděl",
     "statusWant": "Chci vidět",
-    "statusWatched": "Viděl jsem"
+    "statusWatched": "Viděl jsem",
+    "statusRead": "Přečteno"
   },
   "stats": {
     "title": "Statistiky",
+    "moviesSection": "Filmy",
+    "booksSection": "Knihy",
     "watched": "Viděno",
     "want": "Chci vidět",
-    "avgRating": "Průměrné hodnocení"
+    "read": "Přečteno",
+    "wantRead": "Chci číst",
+    "avgRating": "Průměrné hodnocení",
+    "avgBookRating": "Průměrné hodnocení knih"
   },
   "discover": {
     "title": "Objevovat",
-    "search": "Hledat film…",
+    "search": "Hledat…",
+    "searchMovie": "Hledat film…",
+    "searchBook": "Hledat knihu…",
+    "movies": "Filmy",
+    "books": "Knihy",
     "filterGenre": "Žánr"
   },
   "settings": {
     "title": "Nastavení",
     "language": "Jazyk",
     "genres": "Upravit žánry",
-    "booksSoon": "Knihy — brzy"
+    "bookCategories": "Upravit knižní kategorie"
   },
   "ai": {
     "title": "AI asistent",
     "placeholder": "Co dnes večer? Něco jako Blade Runner…",
+    "placeholderBook": "Co číst? Něco jako Duna…",
     "send": "Odeslat",
     "recommend": "Doporuč mi 5 filmů",
-    "noResults": "Bez doporučení."
+    "recommendBooks": "Doporuč mi 5 knih",
+    "movies": "Filmy",
+    "books": "Knihy",
+    "noResults": "Bez doporučení.",
+    "saved": "Uloženo",
+    "movieNotFound": "Film se nepodařilo dohledat v databázi.",
+    "bookNotFound": "Kniha se nepodařila dohledat v databázi."
   },
   "common": {
     "loading": "Načítám…",

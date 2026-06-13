@@ -1,12 +1,12 @@
 {
   "app": {
     "name": "Media Diary",
-    "tagline": "Your movie diary with AI"
+    "tagline": "Your movie and book diary with AI"
   },
   "nav": {
     "home": "Home",
     "discover": "Discover",
-    "library": "My Movies",
+    "library": "Library",
     "stats": "Stats",
     "settings": "Settings",
     "ai": "AI Assistant"
@@ -15,13 +15,25 @@
     "signIn": "Sign in",
     "signOut": "Sign out",
     "welcome": "Welcome to Media Diary",
-    "subtitle": "Track movies, swipe new picks, and let AI recommend what's next."
+    "subtitle": "Track movies and books, swipe new picks, and let AI recommend what's next."
+  },
+  "home": {
+    "todayPicks": "Today's picks",
+    "subtitle": "Swipe · rate · discover",
+    "movies": "Movies",
+    "books": "Books"
   },
   "onboarding": {
-    "title": "What do you enjoy?",
+    "title": "What do you enjoy in movies?",
     "subtitle": "Pick favorite genres — we'll serve films based on your taste.",
+    "bookTitle": "And in books?",
+    "bookSubtitle": "Pick favorite categories — we'll serve books based on your taste.",
     "continue": "Continue",
-    "minGenres": "Select at least 3 genres"
+    "back": "Back",
+    "finish": "Finish",
+    "step": "Step {current} / {total}",
+    "minGenres": "Select at least 3 genres",
+    "minCategories": "Select at least 3 categories"
   },
   "swipe": {
     "watched": "Watched",
@@ -32,10 +44,18 @@
     "notes": "Notes (optional)",
     "tags": "Tags (comma-separated)",
     "stars": "Stars",
+    "starsZero": "0 stars",
     "scale": "1–10",
     "save": "Save",
     "todayPicks": "Today's picks",
     "undo": "Undo last movie"
+  },
+  "bookSwipe": {
+    "read": "Read",
+    "want": "Want to read",
+    "skip": "Skip",
+    "noMore": "That's all for today — more books tomorrow!",
+    "undo": "Undo last book"
   },
   "movie": {
     "director": "Director",
@@ -57,6 +77,17 @@
     "aiWhy": "Why you might like it",
     "detailLink": "Movie details"
   },
+  "book": {
+    "authors": "Authors",
+    "year": "Year",
+    "pages": "pages",
+    "publisher": "Publisher",
+    "overview": "Synopsis",
+    "czechTitle": "Czech title",
+    "databazeKnih": "Databáze knih",
+    "aiWhy": "Why you might like it",
+    "detailLink": "Book details"
+  },
   "report": {
     "button": "Report error",
     "title": "Report data error",
@@ -70,42 +101,79 @@
     "cancel": "Cancel",
     "thanks": "Thanks! Data will reload."
   },
+  "bookReport": {
+    "button": "Report error",
+    "title": "Report data error",
+    "description": "Wrong synopsis, title, or author? We'll try to reload correct data.",
+    "reason_wrong_description": "Wrong synopsis",
+    "reason_wrong_title": "Wrong title",
+    "reason_wrong_author": "Wrong author",
+    "reason_other": "Other",
+    "notePlaceholder": "Optional note…",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "thanks": "Thanks! Data will reload."
+  },
   "library": {
     "watched": "Watched",
     "want": "Want to watch",
-    "all": "All",
+    "read": "Read",
+    "wantRead": "Want to read",
+    "movies": "Movies",
+    "books": "Books",
+    "all": "Library",
     "empty": "Nothing yet — start swiping!",
+    "bookEmpty": "No books yet — start swiping!",
     "history": "History",
     "historyEmpty": "No history yet — movies are saved as they pass through your feed.",
+    "bookHistoryEmpty": "No history yet — books are saved as they pass through your feed.",
     "historyHint": "Every movie from your feed, including skipped ones. Tap to open details or rate.",
+    "bookHistoryHint": "Every book from your feed, including skipped ones. Tap to open details or rate.",
     "statusSeen": "In feed",
     "statusSkipped": "Skipped",
     "statusWant": "Want to watch",
-    "statusWatched": "Watched"
+    "statusWatched": "Watched",
+    "statusRead": "Read"
   },
   "stats": {
     "title": "Statistics",
+    "moviesSection": "Movies",
+    "booksSection": "Books",
     "watched": "Watched",
     "want": "Want to watch",
-    "avgRating": "Average rating"
+    "read": "Read",
+    "wantRead": "Want to read",
+    "avgRating": "Average rating",
+    "avgBookRating": "Average book rating"
   },
   "discover": {
     "title": "Discover",
-    "search": "Search movies…",
+    "search": "Search…",
+    "searchMovie": "Search movies…",
+    "searchBook": "Search books…",
+    "movies": "Movies",
+    "books": "Books",
     "filterGenre": "Genre"
   },
   "settings": {
     "title": "Settings",
     "language": "Language",
     "genres": "Edit genres",
-    "booksSoon": "Books — coming soon"
+    "bookCategories": "Edit book categories"
   },
   "ai": {
     "title": "AI Assistant",
     "placeholder": "What to watch tonight? Something like Blade Runner…",
+    "placeholderBook": "What to read? Something like Dune…",
     "send": "Send",
     "recommend": "Recommend 5 movies",
-    "noResults": "No recommendations."
+    "recommendBooks": "Recommend 5 books",
+    "movies": "Movies",
+    "books": "Books",
+    "noResults": "No recommendations.",
+    "saved": "Saved",
+    "movieNotFound": "Could not find this movie in the database.",
+    "bookNotFound": "Could not find this book in the database."
   },
   "common": {
     "loading": "Loading…",

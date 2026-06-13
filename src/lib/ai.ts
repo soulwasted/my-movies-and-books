@@ -8,6 +8,8 @@ export type UserTasteProfile = {
   locale: "cs" | "en";
   watched: Array<{ title: string; rating?: number | null; genres: string[] }>;
   wantList: string[];
+  excludedTitles: Array<{ title: string; year: number }>;
+  excludedTmdbIds: number[];
   favoriteGenres: string[];
   skippedCount: number;
 };
@@ -17,6 +19,7 @@ export type AiMovieRecommendation = {
   year: number;
   genre: string;
   reason: string;
+  author?: string;
 };
 
 export type AiStructuredResponse = {
@@ -86,13 +89,25 @@ function notConfigured(locale: "cs" | "en"): AiStructuredResponse {
 }
 
 function profileBlock(profile: UserTasteProfile): string {
+  const excludedList =
+    profile.excludedTitles
+      .slice(0, 80)
+      .map((m) => `${m.title} (${m.year})`)
+      .join(", ") || (profile.locale === "cs" ? "žádné" : "none");
+
   return profile.locale === "cs"
     ? `Oblíbené žánry: ${profile.favoriteGenres.join(", ") || "neuvedeno"}
-Viděl: ${profile.watched.slice(0, 15).map((w) => w.title).join(", ") || "nic"}
-Chce vidět: ${profile.wantList.slice(0, 10).join(", ") || "prázdný"}`
+Viděl (nedávno): ${profile.watched.slice(0, 15).map((w) => w.title).join(", ") || "nic"}
+Chce vidět: ${profile.wantList.slice(0, 15).join(", ") || "prázdný"}
+
+ZAKÁZANÉ tituly — už viděl nebo chce vidět, NIKDY je nedoporučuj:
+${excludedList}`
     : `Favorite genres: ${profile.favoriteGenres.join(", ") || "none"}
-Watched: ${profile.watched.slice(0, 15).map((w) => w.title).join(", ") || "none"}
-Want to watch: ${profile.wantList.slice(0, 10).join(", ") || "empty"}`;
+Recently watched: ${profile.watched.slice(0, 15).map((w) => w.title).join(", ") || "none"}
+Want to watch: ${profile.wantList.slice(0, 15).join(", ") || "empty"}
+
+FORBIDDEN titles — already watched or on wishlist, NEVER recommend:
+${excludedList}`;
 }
 
 async function callStructured(
@@ -130,14 +145,14 @@ export async function getRecommendations(
   const system =
     profile.locale === "cs"
       ? `Jsi filmový kurátor v aplikaci Media Diary. Vždy odpovídej přes nástroj movie_assistant_response.
-Doporučuj konkrétní filmy s rokem. Nepřidávej filmy, které uživatel už viděl nebo má v wishlistu.`
+Doporučuj konkrétní filmy s rokem. Striktně vynech filmy ze seznamu ZAKÁZANÉ tituly — uživatel je už viděl nebo má v seznamu chci vidět.`
       : `You are a film curator for Media Diary. Always respond via movie_assistant_response tool.
-Recommend specific movies with year. Skip titles already watched or on wishlist.`;
+Recommend specific movies with year. Strictly exclude FORBIDDEN titles — already watched or on wishlist.`;
 
   const prompt =
     profile.locale === "cs"
-      ? `Doporuč ${count} filmů podle tohoto profilu:\n${profileBlock(profile)}`
-      : `Recommend ${count} movies for this profile:\n${profileBlock(profile)}`;
+      ? `Doporuč ${count + 4} filmů podle tohoto profilu (rezerva pro filtrování):\n${profileBlock(profile)}`
+      : `Recommend ${count + 4} movies for this profile (buffer for filtering):\n${profileBlock(profile)}`;
 
   return callStructured(system, prompt);
 }
@@ -153,11 +168,13 @@ export async function chatAboutMovies(
       ? `Jsi osobní filmový asistent v aplikaci Media Diary. Vždy odpovídej přes nástroj movie_assistant_response.
 Profil uživatele:
 ${profileBlock(profile)}
-Odpovídej v češtině. Pokud uživatel nechce doporučení, nech recommendations prázdné a odpověz v summary.`
+Odpovídej v češtině. Pokud uživatel nechce doporučení, nech recommendations prázdné a odpověz v summary.
+Nikdy nedoporučuj filmy ze seznamu ZAKÁZANÉ tituly.`
       : `You are a personal movie assistant for Media Diary. Always respond via movie_assistant_response tool.
 User profile:
 ${profileBlock(profile)}
-Reply in English. If the user doesn't want picks, leave recommendations empty and answer in summary.`;
+Reply in English. If the user doesn't want picks, leave recommendations empty and answer in summary.
+Never recommend movies from the FORBIDDEN titles list.`;
 
   return callStructured(system, message);
 }

@@ -1,11 +1,22 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Badge } from "@/components/ui/badge";
 import type { AiStructuredResponse } from "@/lib/ai";
+import { AiRecommendationCard } from "@/components/ai-recommendation-card";
+import { AiBookRecommendationCard } from "@/components/ai-book-recommendation-card";
 
-export function AiResponseView({ data }: { data: AiStructuredResponse }) {
+export function AiResponseView({
+  data,
+  locale,
+  media = "movie",
+}: {
+  data: AiStructuredResponse;
+  locale: string;
+  media?: "movie" | "book";
+}) {
   const t = useTranslations("ai");
+
+  const Card = media === "book" ? AiBookRecommendationCard : AiRecommendationCard;
 
   return (
     <div className="space-y-3">
@@ -16,25 +27,11 @@ export function AiResponseView({ data }: { data: AiStructuredResponse }) {
       {data.recommendations.length > 0 && (
         <div className="space-y-2">
           {data.recommendations.map((rec, i) => (
-            <div
+            <Card
               key={`${rec.title}-${rec.year}-${i}`}
-              className="rounded-lg border border-border/60 bg-background/50 p-3"
-            >
-              <div className="flex flex-wrap items-baseline gap-2">
-                <span className="font-medium text-foreground">
-                  {rec.title}
-                </span>
-                <span className="text-xs text-muted-foreground">({rec.year})</span>
-                {rec.genre && (
-                  <Badge variant="secondary" className="text-[10px]">
-                    {rec.genre}
-                  </Badge>
-                )}
-              </div>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                {rec.reason}
-              </p>
-            </div>
+              rec={rec}
+              locale={locale}
+            />
           ))}
         </div>
       )}

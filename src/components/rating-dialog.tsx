@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   Dialog,
@@ -15,10 +15,19 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Star } from "lucide-react";
+import {
+  MAX_SCALE,
+  formatScale,
+  normalizeToScale,
+  starFillLevel,
+  starsToScale,
+} from "@/lib/rating";
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialScale?: number;
+  initialRatingType?: "STARS" | "SCALE";
   onSave: (data: {
     rating?: number;
     ratingType?: "STARS" | "SCALE";
@@ -27,20 +36,33 @@ type Props = {
   }) => void | Promise<void>;
 };
 
-export function RatingDialog({ open, onOpenChange, onSave }: Props) {
+export function RatingDialog({
+  open,
+  onOpenChange,
+  onSave,
+  initialScale,
+  initialRatingType,
+}: Props) {
   const t = useTranslations("swipe");
   const [ratingType, setRatingType] = useState<"STARS" | "SCALE">("STARS");
-  const [stars, setStars] = useState(0);
-  const [scale, setScale] = useState(7);
+  const [scale, setScale] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [tags, setTags] = useState("");
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (open) {
+      setRatingType(initialRatingType ?? "STARS");
+      setScale(initialScale ?? null);
+    }
+  }, [open, initialScale, initialRatingType]);
+
   const handleSave = async () => {
+    if (scale === null || scale < 1) return;
     setSaving(true);
     try {
       await onSave({
-        rating: ratingType === "STARS" ? stars : scale,
+        rating: scale,
         ratingType,
         notes: notes || undefined,
         tags: tags
@@ -50,14 +72,15 @@ export function RatingDialog({ open, onOpenChange, onSave }: Props) {
               .filter(Boolean)
           : undefined,
       });
-      setStars(0);
-      setScale(7);
+      setScale(null);
       setNotes("");
       setTags("");
     } finally {
       setSaving(false);
     }
   };
+
+  const setStars = (stars: number) => setScale(starsToScale(stars));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -77,34 +100,82 @@ export function RatingDialog({ open, onOpenChange, onSave }: Props) {
         </Tabs>
 
         {ratingType === "STARS" ? (
-          <div className="flex justify-center gap-2 py-4">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setStars(n)}
-                className="rounded p-1 transition-transform hover:scale-110"
-              >
-                <Star
-                  className={cn(
-                    "h-8 w-8",
-                    n <= stars ? "fill-amber-400 text-amber-400" : "text-muted-foreground",
-                  )}
-                />
-              </button>
-            ))}
+          <div className="space-y-2 py-4">
+            <div className="flex justify-center gap-2">
+              {[1, 2, 3, 4, 5].map((n) => {
+                const fill = scale != null ? starFillLevel(scale, n) : 0;
+                const selected = scale != null && scale >= starsToScale(n);
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setStars(n)}
+                    className={cn(
+                      "rounded p-1 transition-transform hover:scale-110",
+                      selected && "ring-1 ring-amber-400/50",
+                    )}
+                    aria-label={`${n} ${t("stars")}`}
+                  >
+                    <span className="relative inline-block">
+                      <Star className="h-8 w-8 text-muted-foreground/40" />
+                      {fill > 0 && (
+                        <Star
+                          className="absolute inset-0 h-8 w-8 fill-amber-400 text-amber-400"
+                          style={
+                            fill === 0.5
+                              ? { clipPath: "inset(0 50% 0 0)" }
+                              : undefined
+                          }
+                        />
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {scale != null && (
+              <p className="text-center text-xs text-muted-foreground">
+                {formatScale(scale)} · {Math.round((scale / MAX_SCALE) * 100)} %
+              </p>
+            )}
           </div>
         ) : (
-          <div className="flex items-center justify-center gap-4 py-4">
-            <input
-              type="range"
-              min={1}
-              max={10}
-              value={scale}
-              onChange={(e) => setScale(parseInt(e.target.value, 10))}
-              className="w-full"
-            />
-            <span className="w-8 text-2xl font-bold">{scale}</span>
+          <div className="space-y-2 py-4">
+            <div className="flex items-center justify-center gap-4">
+              <input
+                type="range"
+                min={0}
+                max={MAX_SCALE}
+                value={scale ?? 0}
+                onChange={(e) => setScale(parseInt(e.target.value, 10))}
+                className="w-full"
+              />
+              <span className="w-10 text-2xl font-bold tabular-nums">
+                {scale ?? 0}
+              </span>
+            </div>
+            {scale != null && scale > 0 && (
+              <div className="flex justify-center gap-0.5">
+                {[1, 2, 3, 4, 5].map((n) => {
+                  const fill = starFillLevel(scale, n);
+                  return (
+                    <span key={n} className="relative inline-block">
+                      <Star className="h-5 w-5 text-muted-foreground/40" />
+                      {fill > 0 && (
+                        <Star
+                          className="absolute inset-0 h-5 w-5 fill-amber-400 text-amber-400"
+                          style={
+                            fill === 0.5
+                              ? { clipPath: "inset(0 50% 0 0)" }
+                              : undefined
+                          }
+                        />
+                      )}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -119,7 +190,11 @@ export function RatingDialog({ open, onOpenChange, onSave }: Props) {
           </div>
         </div>
 
-        <Button onClick={handleSave} disabled={saving || (ratingType === "STARS" && stars === 0)} className="w-full">
+        <Button
+          onClick={handleSave}
+          disabled={saving || scale === null || scale < 1}
+          className="w-full"
+        >
           {t("save")}
         </Button>
       </DialogContent>

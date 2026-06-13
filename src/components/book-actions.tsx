@@ -5,34 +5,34 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { RatingDialog } from "@/components/rating-dialog";
 import { StarRatingDisplay } from "@/components/star-rating-display";
-import { saveMovieAction } from "@/lib/actions";
+import { saveBookAction } from "@/lib/actions";
 import { normalizeToScale } from "@/lib/rating";
 import { Heart, Check } from "lucide-react";
 
-type UserMovie = {
+type UserBook = {
   status: string;
   rating: number | null;
   ratingType?: string | null;
 } | null;
 
-export function MovieActions({
-  tmdbId,
-  userMovie,
+export function BookActions({
+  googleVolumeId,
+  userBook,
 }: {
-  tmdbId: number;
-  userMovie: UserMovie;
+  googleVolumeId: string;
+  userBook: UserBook;
   locale: string;
 }) {
-  const t = useTranslations("swipe");
-  const [status, setStatus] = useState(userMovie?.status ?? null);
-  const [rating, setRating] = useState<number | null>(userMovie?.rating ?? null);
+  const t = useTranslations("bookSwipe");
+  const [status, setStatus] = useState(userBook?.status ?? null);
+  const [rating, setRating] = useState<number | null>(userBook?.rating ?? null);
   const [ratingType, setRatingType] = useState<string | null>(
-    userMovie?.ratingType ?? null,
+    userBook?.ratingType ?? null,
   );
   const [ratingOpen, setRatingOpen] = useState(false);
 
   const update = async (
-    newStatus: "WATCHED" | "WANT" | "SKIPPED",
+    newStatus: "READ" | "WANT" | "SKIPPED",
     data?: {
       rating?: number;
       ratingType?: "STARS" | "SCALE";
@@ -40,8 +40,8 @@ export function MovieActions({
       tags?: string[];
     },
   ) => {
-    await saveMovieAction({
-      tmdbId,
+    await saveBookAction({
+      googleVolumeId,
       status: newStatus,
       ...data,
     });
@@ -58,7 +58,7 @@ export function MovieActions({
     notes?: string;
     tags?: string[];
   }) => {
-    await update("WATCHED", data);
+    await update("READ", data);
     setRatingOpen(false);
   };
 
@@ -69,11 +69,11 @@ export function MovieActions({
     <>
       <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
         <Button
-          variant={status === "WATCHED" ? "default" : "outline"}
+          variant={status === "READ" ? "default" : "outline"}
           size="sm"
           onClick={() => setRatingOpen(true)}
         >
-          <Check className="mr-1 h-4 w-4" /> {t("watched")}
+          <Check className="mr-1 h-4 w-4" /> {t("read")}
         </Button>
         <Button
           variant={status === "WANT" ? "default" : "outline"}
@@ -82,7 +82,7 @@ export function MovieActions({
         >
           <Heart className="mr-1 h-4 w-4" /> {t("want")}
         </Button>
-        {rating != null && status === "WATCHED" && (
+        {rating != null && status === "READ" && (
           <button
             type="button"
             onClick={() => setRatingOpen(true)}
@@ -102,9 +102,7 @@ export function MovieActions({
         onOpenChange={setRatingOpen}
         onSave={handleRatingSave}
         initialScale={initialScale}
-        initialRatingType={
-          ratingType === "SCALE" ? "SCALE" : "STARS"
-        }
+        initialRatingType={ratingType === "SCALE" ? "SCALE" : "STARS"}
       />
     </>
   );

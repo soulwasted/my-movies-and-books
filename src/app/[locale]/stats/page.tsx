@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getUserStats } from "@/lib/actions";
+import { formatScale } from "@/lib/rating";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function StatsPage({
@@ -21,7 +22,9 @@ export default async function StatsPage({
   return (
     <main className="flex flex-1 flex-col px-4 pb-24 pt-6">
       <h1 className="text-2xl font-bold">{t("title")}</h1>
-      <div className="mt-6 grid gap-4">
+
+      <h2 className="mb-3 mt-6 text-lg font-semibold">{t("moviesSection")}</h2>
+      <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-medium text-muted-foreground">
@@ -50,7 +53,43 @@ export default async function StatsPage({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-4xl font-bold">{stats.avgRating.toFixed(1)}</p>
+              <p className="text-4xl font-bold">{formatScale(stats.avgRating)}</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <h2 className="mb-3 mt-8 text-lg font-semibold">{t("booksSection")}</h2>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-medium text-muted-foreground">
+              {t("read")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-4xl font-bold">{stats?.books?.read ?? 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-medium text-muted-foreground">
+              {t("wantRead")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-4xl font-bold">{stats?.books?.want ?? 0}</p>
+          </CardContent>
+        </Card>
+        {stats?.books?.avgRating != null && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-medium text-muted-foreground">
+                {t("avgBookRating")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-4xl font-bold">{formatScale(stats.books.avgRating)}</p>
             </CardContent>
           </Card>
         )}

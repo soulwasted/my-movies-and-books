@@ -14,7 +14,9 @@ model User {
   image       String?
   preferences UserPreferences?
   movies      UserMovie[]
+  books       UserBook[]
   dataReports MovieDataReport[]
+  bookReports BookDataReport[]
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 }
@@ -24,8 +26,9 @@ model UserPreferences {
   userId             String   @unique
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   locale             String   @default("cs")
-  favoriteGenreIds   String   @default("[]")
-  onboardingComplete Boolean  @default(false)
+  favoriteGenreIds       String   @default("[]")
+  favoriteBookCategoryIds String  @default("[]")
+  onboardingComplete   Boolean  @default(false)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }
@@ -83,5 +86,58 @@ model MovieDataReport {
   createdAt DateTime @default(now())
 
   @@index([tmdbId])
+  @@index([userId])
+}
+
+enum BookStatus {
+  SEEN
+  READ
+  WANT
+  SKIPPED
+}
+
+model UserBook {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  googleVolumeId String
+  status         BookStatus
+  rating         Float?
+  ratingType     RatingType?
+  notes          String?
+  tags           String       @default("[]")
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([userId, googleVolumeId])
+  @@index([userId, status])
+  @@index([userId, updatedAt])
+}
+
+model BookCache {
+  googleVolumeId  String    @id
+  data            String
+  isbn13          String?
+  openLibraryId   String?
+  czechTitle      String?
+  wikidataId      String?
+  databazeKnihUrl String?
+  enrichmentData  String?
+  rejectedOlIds   String    @default("[]")
+  enrichedAt      DateTime?
+  updatedAt       DateTime  @updatedAt
+}
+
+model BookDataReport {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  googleVolumeId String
+  reason         String
+  note           String?
+  createdAt      DateTime @default(now())
+
+  @@index([googleVolumeId])
   @@index([userId])
 }

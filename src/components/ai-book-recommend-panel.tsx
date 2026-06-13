@@ -7,14 +7,16 @@ import { Sparkles } from "lucide-react";
 import { AiResponseView } from "@/components/ai-response-view";
 import type { AiStructuredResponse } from "@/lib/ai";
 
-export function AiRecommendPanel({
+export function AiBookRecommendPanel({
   locale,
-  movieTitle,
+  bookTitle,
+  bookAuthor,
 }: {
   locale: "cs" | "en";
-  movieTitle: string;
+  bookTitle: string;
+  bookAuthor: string;
 }) {
-  const t = useTranslations("movie");
+  const t = useTranslations("book");
   const [response, setResponse] = useState<AiStructuredResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -26,11 +28,12 @@ export function AiRecommendPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "chat",
+          media: "book",
           locale,
           message:
             locale === "cs"
-              ? `Proč by se mi mohl líbit film "${movieTitle}"? A co podobného doporučíš?`
-              : `Why might I like "${movieTitle}"? What similar films do you recommend?`,
+              ? `Proč by se mi mohla líbit kniha "${bookTitle}" od ${bookAuthor}? A co podobného doporučíš?`
+              : `Why might I like "${bookTitle}" by ${bookAuthor}? What similar books do you recommend?`,
         }),
       });
       const data = await res.json();
@@ -51,7 +54,7 @@ export function AiRecommendPanel({
       </div>
       {response && (
         <div className="mt-3">
-          <AiResponseView data={response} locale={locale} />
+          <AiResponseView data={response} locale={locale} media="book" />
         </div>
       )}
     </section>

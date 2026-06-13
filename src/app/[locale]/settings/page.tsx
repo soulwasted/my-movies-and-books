@@ -48,7 +48,9 @@ export default async function SettingsPage({
         </div>
 
         <div>
-          <Badge variant="secondary">{t("booksSoon")}</Badge>
+          <Link href={`/${locale}/onboarding`}>
+            <Button variant="outline">{t("bookCategories")}</Button>
+          </Link>
         </div>
 
         {user?.imageUrl && (

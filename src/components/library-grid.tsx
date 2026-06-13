@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { posterUrl } from "@/lib/tmdb";
 import { Badge } from "@/components/ui/badge";
-import { Star } from "lucide-react";
+import { StarRatingDisplay } from "@/components/star-rating-display";
 
 type Item = {
   tmdbId: number;
@@ -87,9 +87,12 @@ export function LibraryGrid({
                 </div>
               )}
               {item.rating != null && (
-                <div className="absolute right-2 top-2 flex items-center gap-0.5 rounded bg-black/70 px-1.5 py-0.5 text-xs">
-                  <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                  {item.rating}
+                <div className="absolute right-2 top-2 rounded bg-black/70 px-1.5 py-0.5">
+                  <StarRatingDisplay
+                    rating={item.rating}
+                    ratingType={item.ratingType}
+                    size="sm"
+                  />
                 </div>
               )}
               {showStatus && statusKey && (
