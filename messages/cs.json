@@ -159,7 +159,12 @@
     "title": "Nastavení",
     "language": "Jazyk",
     "genres": "Upravit žánry",
-    "bookCategories": "Upravit knižní kategorie"
+    "bookCategories": "Upravit knižní kategorie",
+    "appearance": "Vzhled",
+    "colorScheme": "Režim",
+    "schemeDark": "Tmavý",
+    "schemeLight": "Světlý",
+    "fontTheme": "Téma písma"
   },
   "ai": {
     "title": "AI asistent",

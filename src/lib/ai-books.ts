@@ -1,4 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { z } from "zod";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { AI_MODEL, AI_EFFORT, buildMessages, type AiChatTurn } from "@/lib/ai-model";
 import type { AiStructuredResponse } from "@/lib/ai";
 
 const client = process.env.ANTHROPIC_API_KEY
@@ -21,6 +24,7 @@ export type AiBookRecommendation = {
   year: number;
   genre: string;
   reason: string;
+  volumeId?: string;
 };
 
 export type AiBookStructuredResponse = {
@@ -29,56 +33,21 @@ export type AiBookStructuredResponse = {
   followUp: string;
 };
 
-const BOOK_RESPONSE_TOOL: Anthropic.Tool = {
-  name: "book_assistant_response",
-  description: "Structured book assistant response with recommendations",
-  input_schema: {
-    type: "object" as const,
-    properties: {
-      summary: {
-        type: "string",
-        description: "Brief intro or answer to the user (1-3 sentences)",
-      },
-      recommendations: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            title: { type: "string" },
-            author: { type: "string" },
-            year: { type: "integer" },
-            genre: { type: "string" },
-            reason: { type: "string", description: "One sentence why it fits" },
-          },
-          required: ["title", "author", "year", "genre", "reason"],
-        },
-      },
-      followUp: {
-        type: "string",
-        description: "Optional closing question or tip",
-      },
-    },
-    required: ["summary", "recommendations", "followUp"],
-  },
-};
+/** Schéma odpovědi pro structured outputs (nový model nepodporuje vynucený tool_choice). */
+const BookResponseSchema = z.object({
+  summary: z.string().describe("Brief intro or answer to the user (1-3 sentences)"),
+  recommendations: z.array(
+    z.object({
+      title: z.string(),
+      author: z.string(),
+      year: z.number().int(),
+      genre: z.string(),
+      reason: z.string().describe("One sentence why it fits"),
+    }),
+  ),
+  followUp: z.string().describe("Optional closing question or tip, may be empty"),
+});
 
-function parseBookToolResponse(input: unknown): AiBookStructuredResponse {
-  const data = input as Partial<AiBookStructuredResponse>;
-  return {
-    summary: typeof data.summary === "string" ? data.summary : "",
-    recommendations: Array.isArray(data.recommendations)
-      ? data.recommendations.filter(
-          (r): r is AiBookRecommendation =>
-            typeof r?.title === "string" &&
-            typeof r?.author === "string" &&
-            typeof r?.year === "number" &&
-            typeof r?.genre === "string" &&
-            typeof r?.reason === "string",
-        )
-      : [],
-    followUp: typeof data.followUp === "string" ? data.followUp : "",
-  };
-}
 
 function notConfigured(locale: "cs" | "en"): AiBookStructuredResponse {
   return {
@@ -116,20 +85,17 @@ ${excludedList}`;
 async function callBookStructured(
   system: string,
   userMessage: string,
+  history: AiChatTurn[] = [],
 ): Promise<AiBookStructuredResponse> {
-  const response = await client!.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 1200,
+  const response = await client!.messages.parse({
+    model: AI_MODEL,
+    max_tokens: 4000,
     system,
-    tools: [BOOK_RESPONSE_TOOL],
-    tool_choice: { type: "tool", name: "book_assistant_response" },
-    messages: [{ role: "user", content: userMessage }],
+    output_config: { effort: AI_EFFORT, format: zodOutputFormat(BookResponseSchema) },
+    messages: buildMessages(history, userMessage),
   });
 
-  const toolBlock = response.content.find((b) => b.type === "tool_use");
-  if (toolBlock?.type === "tool_use") {
-    return parseBookToolResponse(toolBlock.input);
-  }
+  if (response.parsed_output) return response.parsed_output;
 
   const textBlock = response.content.find((b) => b.type === "text");
   return {
@@ -147,9 +113,9 @@ export async function getBookRecommendations(
 
   const system =
     profile.locale === "cs"
-      ? `Jsi knižní kurátor v aplikaci Media Diary. Vždy odpovídej přes nástroj book_assistant_response.
+      ? `Jsi knižní kurátor v aplikaci Media Diary.
 Doporučuj konkrétní knihy s autorem a rokem. Striktně vynech knihy ze seznamu ZAKÁZANÉ tituly.`
-      : `You are a book curator for Media Diary. Always respond via book_assistant_response tool.
+      : `You are a book curator for Media Diary.
 Recommend specific books with author and year. Strictly exclude FORBIDDEN titles.`;
 
   const prompt =
@@ -163,23 +129,24 @@ Recommend specific books with author and year. Strictly exclude FORBIDDEN titles
 export async function chatAboutBooks(
   message: string,
   profile: UserBookTasteProfile,
+  history: AiChatTurn[] = [],
 ): Promise<AiBookStructuredResponse> {
   if (!client) return notConfigured(profile.locale);
 
   const system =
     profile.locale === "cs"
-      ? `Jsi osobní knižní asistent v aplikaci Media Diary. Vždy odpovídej přes nástroj book_assistant_response.
+      ? `Jsi osobní knižní asistent v aplikaci Media Diary.
 Profil uživatele:
 ${profileBlock(profile)}
 Odpovídej v češtině. Pokud uživatel nechce doporučení, nech recommendations prázdné a odpověz v summary.
 Nikdy nedoporučuj knihy ze seznamu ZAKÁZANÉ tituly.`
-      : `You are a personal book assistant for Media Diary. Always respond via book_assistant_response tool.
+      : `You are a personal book assistant for Media Diary.
 User profile:
 ${profileBlock(profile)}
 Reply in English. If the user doesn't want picks, leave recommendations empty and answer in summary.
 Never recommend books from the FORBIDDEN titles list.`;
 
-  return callBookStructured(system, message);
+  return callBookStructured(system, message, history);
 }
 
 export async function explainAuthorBooks(
@@ -198,8 +165,8 @@ export async function explainAuthorBooks(
 
   const system =
     locale === "cs"
-      ? "Odpovídej přes book_assistant_response. Max 3 doporučení."
-      : "Respond via book_assistant_response. Max 3 recommendations.";
+      ? "Max 3 doporučení."
+      : "Max 3 recommendations.";
 
   return callBookStructured(system, prompt);
 }
@@ -224,6 +191,7 @@ export function bookResponseToGeneric(data: AiBookStructuredResponse): AiStructu
       genre: r.genre,
       reason: r.reason,
       author: r.author,
+      volumeId: r.volumeId,
     })) as AiStructuredResponse["recommendations"],
     followUp: data.followUp,
   };

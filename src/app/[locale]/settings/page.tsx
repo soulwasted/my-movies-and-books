@@ -6,6 +6,7 @@ import { SignOutButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ensureUser } from "@/lib/user";
+import { AppearanceSettings } from "@/components/appearance-settings";
 
 export default async function SettingsPage({
   params,
@@ -39,6 +40,11 @@ export default async function SettingsPage({
               <Badge variant={locale === "en" ? "default" : "outline"}>English</Badge>
             </Link>
           </div>
+        </div>
+
+        <div>
+          <h2 className="mb-2 text-sm font-semibold">{t("appearance")}</h2>
+          <AppearanceSettings />
         </div>
 
         <div>

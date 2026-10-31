@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
     root: process.cwd(),
   },
   images: {
+    // Zdroje (TMDB, Google Books, Open Library) už posílají zmenšené JPEGy ve
+    // zvolené velikosti. Vercel optimizer jen přidával cold-start latenci a
+    // bral limit transformací, takže se obrázky načítají přímo.
+    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "image.tmdb.org" },
       { protocol: "https", hostname: "lh3.googleusercontent.com" },

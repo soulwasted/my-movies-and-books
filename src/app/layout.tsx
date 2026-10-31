@@ -1,17 +1,55 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import {
+  Geist,
+  Geist_Mono,
+  Space_Mono,
+  JetBrains_Mono,
+  Courier_Prime,
+  IBM_Plex_Mono,
+} from "next/font/google";
+import { ThemeProvider } from "@/components/theme-provider";
+import { ColorSchemeProvider } from "@/components/color-scheme-provider";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin", "latin-ext"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin", "latin-ext"] });
+// Témata z Invoicingu; preload jen pro výchozí Geist, ostatní až při výběru.
+const spaceMono = Space_Mono({
+  variable: "--font-space-mono",
+  weight: ["400", "700"],
+  subsets: ["latin", "latin-ext"],
+  preload: false,
+});
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin", "latin-ext"],
+  preload: false,
+});
+const courierPrime = Courier_Prime({
+  variable: "--font-courier-prime",
+  weight: ["400", "700"],
+  subsets: ["latin", "latin-ext"],
+  preload: false,
+});
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-ibm-plex-mono",
+  weight: ["400", "700"],
+  subsets: ["latin", "latin-ext"],
+  preload: false,
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const fontVariables = [
+  geistSans.variable,
+  geistMono.variable,
+  spaceMono.variable,
+  jetbrainsMono.variable,
+  courierPrime.variable,
+  ibmPlexMono.variable,
+].join(" ");
+
+/** Nastaví téma a režim před prvním vykreslením, aby stránka neproblikla. */
+const THEME_BOOTSTRAP = `(function(){try{var d=document.documentElement;var t=localStorage.getItem("app-theme");var ok=["default","space-mono","jetbrains-mono","courier-prime","ibm-plex-mono"];if(t&&ok.indexOf(t)!==-1){d.setAttribute("data-theme",t);}if(localStorage.getItem("app-color-scheme")==="light"){d.classList.remove("dark");}}catch(e){}})();`;
 
 export const metadata: Metadata = {
   title: "Media Diary",
@@ -34,8 +72,18 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider>
-      <html lang="cs" className={`${geistSans.variable} ${geistMono.variable} dark h-full`}>
-        <body className="min-h-full flex flex-col bg-background antialiased">{children}</body>
+      <html lang="cs" className="dark h-full" suppressHydrationWarning>
+        <head>
+          <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
+        </head>
+        <body
+          className={`${fontVariables} min-h-full flex flex-col bg-background antialiased`}
+          suppressHydrationWarning
+        >
+          <ThemeProvider>
+            <ColorSchemeProvider>{children}</ColorSchemeProvider>
+          </ThemeProvider>
+        </body>
       </html>
     </ClerkProvider>
   );

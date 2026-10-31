@@ -102,7 +102,10 @@ async function googleBooksFetch<T>(path: string, params: Record<string, string> 
   url.searchParams.set("key", apiKey);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
 
-  const res = await fetch(url.toString(), { next: { revalidate: 3600 } });
+  const res = await fetch(url.toString(), {
+    next: { revalidate: 3600 },
+    signal: AbortSignal.timeout(8000),
+  });
   if (!res.ok) {
     throw new Error(`Google Books error: ${res.status} ${path}`);
   }

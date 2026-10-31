@@ -1,4 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { z } from "zod";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { AI_MODEL, AI_EFFORT, buildMessages, type AiChatTurn } from "@/lib/ai-model";
 
 const client = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -20,6 +23,9 @@ export type AiMovieRecommendation = {
   genre: string;
   reason: string;
   author?: string;
+  /** Vyřešeno na serveru při filtrování, klient pak nemusí znovu hledat. */
+  tmdbId?: number;
+  volumeId?: string;
 };
 
 export type AiStructuredResponse = {
@@ -28,54 +34,20 @@ export type AiStructuredResponse = {
   followUp: string;
 };
 
-const RESPONSE_TOOL: Anthropic.Tool = {
-  name: "movie_assistant_response",
-  description: "Structured movie assistant response with recommendations",
-  input_schema: {
-    type: "object" as const,
-    properties: {
-      summary: {
-        type: "string",
-        description: "Brief intro or answer to the user (1-3 sentences)",
-      },
-      recommendations: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            title: { type: "string" },
-            year: { type: "integer" },
-            genre: { type: "string" },
-            reason: { type: "string", description: "One sentence why it fits" },
-          },
-          required: ["title", "year", "genre", "reason"],
-        },
-      },
-      followUp: {
-        type: "string",
-        description: "Optional closing question or tip",
-      },
-    },
-    required: ["summary", "recommendations", "followUp"],
-  },
-};
+/** Schéma odpovědi pro structured outputs (nový model nepodporuje vynucený tool_choice). */
+const ResponseSchema = z.object({
+  summary: z.string().describe("Brief intro or answer to the user (1-3 sentences)"),
+  recommendations: z.array(
+    z.object({
+      title: z.string(),
+      year: z.number().int(),
+      genre: z.string(),
+      reason: z.string().describe("One sentence why it fits"),
+    }),
+  ),
+  followUp: z.string().describe("Optional closing question or tip, may be empty"),
+});
 
-function parseToolResponse(input: unknown): AiStructuredResponse {
-  const data = input as Partial<AiStructuredResponse>;
-  return {
-    summary: typeof data.summary === "string" ? data.summary : "",
-    recommendations: Array.isArray(data.recommendations)
-      ? data.recommendations.filter(
-          (r): r is AiMovieRecommendation =>
-            typeof r?.title === "string" &&
-            typeof r?.year === "number" &&
-            typeof r?.genre === "string" &&
-            typeof r?.reason === "string",
-        )
-      : [],
-    followUp: typeof data.followUp === "string" ? data.followUp : "",
-  };
-}
 
 function notConfigured(locale: "cs" | "en"): AiStructuredResponse {
   return {
@@ -113,21 +85,19 @@ ${excludedList}`;
 async function callStructured(
   system: string,
   userMessage: string,
+  history: AiChatTurn[] = [],
 ): Promise<AiStructuredResponse> {
-  const response = await client!.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 1200,
+  const response = await client!.messages.parse({
+    model: AI_MODEL,
+    max_tokens: 4000,
     system,
-    tools: [RESPONSE_TOOL],
-    tool_choice: { type: "tool", name: "movie_assistant_response" },
-    messages: [{ role: "user", content: userMessage }],
+    output_config: { effort: AI_EFFORT, format: zodOutputFormat(ResponseSchema) },
+    messages: buildMessages(history, userMessage),
   });
 
-  const toolBlock = response.content.find((b) => b.type === "tool_use");
-  if (toolBlock?.type === "tool_use") {
-    return parseToolResponse(toolBlock.input);
-  }
+  if (response.parsed_output) return response.parsed_output;
 
+  // Odmítnutí nebo neparsovatelná odpověď: vrátit aspoň text, ať UI něco ukáže.
   const textBlock = response.content.find((b) => b.type === "text");
   return {
     summary: textBlock?.type === "text" ? textBlock.text : "",
@@ -144,9 +114,9 @@ export async function getRecommendations(
 
   const system =
     profile.locale === "cs"
-      ? `Jsi filmový kurátor v aplikaci Media Diary. Vždy odpovídej přes nástroj movie_assistant_response.
+      ? `Jsi filmový kurátor v aplikaci Media Diary.
 Doporučuj konkrétní filmy s rokem. Striktně vynech filmy ze seznamu ZAKÁZANÉ tituly — uživatel je už viděl nebo má v seznamu chci vidět.`
-      : `You are a film curator for Media Diary. Always respond via movie_assistant_response tool.
+      : `You are a film curator for Media Diary.
 Recommend specific movies with year. Strictly exclude FORBIDDEN titles — already watched or on wishlist.`;
 
   const prompt =
@@ -160,23 +130,24 @@ Recommend specific movies with year. Strictly exclude FORBIDDEN titles — alrea
 export async function chatAboutMovies(
   message: string,
   profile: UserTasteProfile,
+  history: AiChatTurn[] = [],
 ): Promise<AiStructuredResponse> {
   if (!client) return notConfigured(profile.locale);
 
   const system =
     profile.locale === "cs"
-      ? `Jsi osobní filmový asistent v aplikaci Media Diary. Vždy odpovídej přes nástroj movie_assistant_response.
+      ? `Jsi osobní filmový asistent v aplikaci Media Diary.
 Profil uživatele:
 ${profileBlock(profile)}
 Odpovídej v češtině. Pokud uživatel nechce doporučení, nech recommendations prázdné a odpověz v summary.
 Nikdy nedoporučuj filmy ze seznamu ZAKÁZANÉ tituly.`
-      : `You are a personal movie assistant for Media Diary. Always respond via movie_assistant_response tool.
+      : `You are a personal movie assistant for Media Diary.
 User profile:
 ${profileBlock(profile)}
 Reply in English. If the user doesn't want picks, leave recommendations empty and answer in summary.
 Never recommend movies from the FORBIDDEN titles list.`;
 
-  return callStructured(system, message);
+  return callStructured(system, message, history);
 }
 
 export async function explainPersonFilms(
@@ -196,8 +167,8 @@ export async function explainPersonFilms(
 
   const system =
     locale === "cs"
-      ? "Odpovídej přes movie_assistant_response. Max 3 doporučení."
-      : "Respond via movie_assistant_response. Max 3 recommendations.";
+      ? "Max 3 doporučení."
+      : "Max 3 recommendations.";
 
   return callStructured(system, prompt);
 }

@@ -11,12 +11,20 @@ import { cn } from "@/lib/utils";
 type Genre = { id: number; name: string };
 type Category = { id: string; name: string };
 
-export function OnboardingClient({ locale }: { locale: string }) {
+export function OnboardingClient({
+  locale,
+  initialGenreIds = [],
+  initialCategoryIds = [],
+}: {
+  locale: string;
+  initialGenreIds?: number[];
+  initialCategoryIds?: string[];
+}) {
   const [step, setStep] = useState<1 | 2>(1);
   const [genres, setGenres] = useState<Genre[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedGenres, setSelectedGenres] = useState<number[]>(initialGenreIds);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(initialCategoryIds);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const router = useRouter();
@@ -54,13 +62,18 @@ export function OnboardingClient({ locale }: { locale: string }) {
   const handleFinish = async () => {
     if (selectedCategories.length < 3) return;
     setSaving(true);
-    await savePreferencesAction({
-      favoriteGenreIds: selectedGenres,
-      favoriteBookCategoryIds: selectedCategories,
-      locale,
-      onboardingComplete: true,
-    });
-    router.push(`/${locale}`);
+    try {
+      await savePreferencesAction({
+        favoriteGenreIds: selectedGenres,
+        favoriteBookCategoryIds: selectedCategories,
+        locale,
+        onboardingComplete: true,
+      });
+      router.push(`/${locale}`);
+    } catch {
+      // Uložení selhalo (např. DB se probouzí): nechat tlačítko znovu použitelné.
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -73,7 +86,7 @@ export function OnboardingClient({ locale }: { locale: string }) {
 
   if (step === 1) {
     return (
-      <main className="flex flex-1 flex-col px-4 py-8 pb-12">
+      <main className="flex flex-1 flex-col px-4 pb-28 pt-8">
         <p className="text-xs text-muted-foreground">{t("step", { current: 1, total: 2 })}</p>
         <h1 className="mt-1 text-2xl font-bold">{t("title")}</h1>
         <p className="mt-2 text-muted-foreground">{t("subtitle")}</p>
@@ -111,7 +124,7 @@ export function OnboardingClient({ locale }: { locale: string }) {
   }
 
   return (
-    <main className="flex flex-1 flex-col px-4 py-8 pb-12">
+    <main className="flex flex-1 flex-col px-4 pb-28 pt-8">
       <p className="text-xs text-muted-foreground">{t("step", { current: 2, total: 2 })}</p>
       <h1 className="mt-1 text-2xl font-bold">{t("bookTitle")}</h1>
       <p className="mt-2 text-muted-foreground">{t("bookSubtitle")}</p>

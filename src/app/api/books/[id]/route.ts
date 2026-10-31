@@ -50,7 +50,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     };
   }
 
-  if (stale || !enrichment) {
+  // Jen při staré cache; kniha bez shody v Open Library se nezkouší znovu pokaždé.
+  if (stale) {
     const rejectedIds: string[] = cached?.rejectedOlIds
       ? JSON.parse(cached.rejectedOlIds)
       : [];

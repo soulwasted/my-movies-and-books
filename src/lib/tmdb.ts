@@ -84,6 +84,7 @@ async function tmdbFetch<T>(path: string, params: Record<string, string> = {}): 
   const res = await fetch(url.toString(), {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     next: { revalidate: 3600 },
+    signal: AbortSignal.timeout(8000),
   });
 
   if (!res.ok) {
@@ -93,7 +94,10 @@ async function tmdbFetch<T>(path: string, params: Record<string, string> = {}): 
   return res.json() as Promise<T>;
 }
 
-export function posterUrl(path: string | null, size: "w342" | "w500" | "original" = "w500") {
+export function posterUrl(
+  path: string | null,
+  size: "w185" | "w342" | "w500" | "original" = "w500",
+) {
   if (!path) return null;
   return `${TMDB_IMAGE}/${size}${path}`;
 }
@@ -109,17 +113,11 @@ export async function getGenres(): Promise<TmdbGenre[]> {
 }
 
 export async function getMovieDetails(id: number, locale = "cs-CZ"): Promise<TmdbMovieDetail> {
-  const [movie, credits, videos, translations] = await Promise.all([
-    tmdbFetch<Omit<TmdbMovieDetail, "credits" | "videos" | "translations">>(`/movie/${id}`, {
-      language: locale,
-      append_to_response: "external_ids",
-    }),
-    tmdbFetch<TmdbMovieDetail["credits"]>(`/movie/${id}/credits`),
-    tmdbFetch<{ results: TmdbVideo[] }>(`/movie/${id}/videos`, { language: locale }),
-    tmdbFetch<TmdbMovieDetail["translations"]>(`/movie/${id}/translations`),
-  ]);
-
-  return { ...movie, credits, videos, translations };
+  // Jeden request místo čtyř: credits, videos a translations přes append_to_response.
+  return tmdbFetch<TmdbMovieDetail>(`/movie/${id}`, {
+    language: locale,
+    append_to_response: "external_ids,credits,videos,translations",
+  });
 }
 
 export async function getPersonDetails(id: number, locale = "cs-CZ"): Promise<TmdbPerson> {
@@ -176,6 +174,14 @@ export function getCzechTitle(movie: TmdbMovieDetail): string | null {
     (t) => t.iso_639_1 === "cs" || t.iso_3166_1 === "CZ",
   );
   return cs?.data.title ?? null;
+}
+
+/** Anglický název jako záloha, když chybí český (lepší než originál v japonštině). */
+export function getEnglishTitle(movie: TmdbMovieDetail): string | null {
+  const en = movie.translations?.translations.find(
+    (t) => t.iso_639_1 === "en" && t.iso_3166_1 === "US",
+  ) ?? movie.translations?.translations.find((t) => t.iso_639_1 === "en");
+  return en?.data.title?.trim() || null;
 }
 
 export function getCzechOverview(movie: TmdbMovieDetail): string | null {

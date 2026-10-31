@@ -13,7 +13,25 @@ export async function requireUserId(): Promise<string> {
   return userId;
 }
 
+/** Uživatelé, o kterých víme, že už mají řádek v DB (per instance serveru). */
+const knownUsers = new Set<string>();
+
+/**
+ * Zajistí řádek uživatele pro FK vazby. Rychlá cesta: jednou ověřit v DB a pak
+ * už nic. Clerk API se volá jen při prvním vytvoření, ne při každém requestu.
+ */
 export async function ensureUser(clerkId: string) {
+  if (knownUsers.has(clerkId)) return;
+
+  const existing = await prisma.user.findUnique({
+    where: { id: clerkId },
+    select: { id: true },
+  });
+  if (existing) {
+    knownUsers.add(clerkId);
+    return;
+  }
+
   let email = `${clerkId}@users.clerk.dev`;
   let name: string | null = null;
   let image: string | null = null;
@@ -39,9 +57,10 @@ export async function ensureUser(clerkId: string) {
     }
   }
 
-  return prisma.user.upsert({
+  await prisma.user.upsert({
     where: { id: clerkId },
     create: { id: clerkId, email, name, image },
     update: { email, name, image },
   });
+  knownUsers.add(clerkId);
 }

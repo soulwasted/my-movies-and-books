@@ -6,18 +6,20 @@ export async function filterAiResponse(
   excludedTmdbIds: Set<number>,
   excludedTitles: Array<{ title: string; year: number }>,
 ): Promise<AiStructuredResponse> {
-  const kept: AiMovieRecommendation[] = [];
+  // Dohledání v TMDB paralelně (dřív sekvenčně, 9 doporučení = 9+ requestů za sebou).
+  const resolved = await Promise.all(
+    response.recommendations.map(async (rec): Promise<AiMovieRecommendation | null> => {
+      if (isTitleExcluded(rec.title, rec.year, excludedTitles)) return null;
+      const tmdbId = await resolveMovieTmdbId(rec.title, rec.year);
+      if (tmdbId && excludedTmdbIds.has(tmdbId)) return null;
+      return tmdbId ? { ...rec, tmdbId } : rec;
+    }),
+  );
 
-  for (const rec of response.recommendations) {
-    if (isTitleExcluded(rec.title, rec.year, excludedTitles)) continue;
-
-    const tmdbId = await resolveMovieTmdbId(rec.title, rec.year);
-    if (tmdbId && excludedTmdbIds.has(tmdbId)) continue;
-
-    kept.push(rec);
-  }
-
-  return { ...response, recommendations: kept };
+  return {
+    ...response,
+    recommendations: resolved.filter((r): r is AiMovieRecommendation => r !== null),
+  };
 }
 
 export async function filterToCount(

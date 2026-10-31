@@ -159,7 +159,12 @@
     "title": "Settings",
     "language": "Language",
     "genres": "Edit genres",
-    "bookCategories": "Edit book categories"
+    "bookCategories": "Edit book categories",
+    "appearance": "Appearance",
+    "colorScheme": "Mode",
+    "schemeDark": "Dark",
+    "schemeLight": "Light",
+    "fontTheme": "Font theme"
   },
   "ai": {
     "title": "AI Assistant",

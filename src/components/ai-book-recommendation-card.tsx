@@ -44,15 +44,17 @@ export function AiBookRecommendationCard({
   const t = useTranslations("bookSwipe");
   const tAi = useTranslations("ai");
   const author = rec.author ?? "";
-  const [volumeId, setVolumeId] = useState<string | null>(null);
+  const [volumeId, setVolumeId] = useState<string | null>(rec.volumeId ?? null);
   const [status, setStatus] = useState<BookStatus | null>(null);
-  const [resolving, setResolving] = useState(true);
+  const [resolving, setResolving] = useState(!rec.volumeId);
   const [acting, setActing] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
   const [ratingVolumeId, setRatingVolumeId] = useState<string | null>(null);
 
   useEffect(() => {
+    // Server už knihu dohledal při filtrování, není co řešit.
+    if (rec.volumeId) return;
     let cancelled = false;
     (async () => {
       setResolving(true);
@@ -66,7 +68,7 @@ export function AiBookRecommendationCard({
     return () => {
       cancelled = true;
     };
-  }, [rec.title, rec.year, author]);
+  }, [rec.title, rec.year, author, rec.volumeId]);
 
   const ensureId = useCallback(async () => {
     if (volumeId) return volumeId;

@@ -15,7 +15,8 @@ export default async function SignInPage({
         routing="path"
         path={`/${locale}/sign-in`}
         signUpUrl={`/${locale}/sign-up`}
-        forceRedirectUrl={`/${locale}/onboarding`}
+        // Domovská stránka sama pošle na onboarding jen toho, kdo ho nemá hotový.
+        fallbackRedirectUrl={`/${locale}`}
       />
     </main>
   );

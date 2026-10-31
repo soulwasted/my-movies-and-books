@@ -45,7 +45,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   let csfdRating = cached?.csfdRating ?? null;
   let csfdUrl = cached?.csfdUrl ?? null;
 
-  if (stale || !czdbFilm) {
+  // Re-resolve jen když je cache stará. Film bez shody v CZDB se nezkouší znovu
+  // při každém zobrazení karty (dřív to byly až 3 externí requesty pokaždé).
+  if (stale) {
     const year = movieData.release_date?.slice(0, 4);
     const rejectedIds: number[] = cached?.rejectedCzdbIds
       ? JSON.parse(cached.rejectedCzdbIds)

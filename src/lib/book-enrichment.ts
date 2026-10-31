@@ -62,6 +62,7 @@ async function fetchWikidataCzechTitle(
       },
       body: `query=${encodeURIComponent(query)}`,
       next: { revalidate: 604800 },
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return { wikidataId: null, czechTitle: null };
 

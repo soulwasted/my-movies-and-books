@@ -25,12 +25,17 @@ type OlSearchResponse = {
 };
 
 async function olFetch<T>(url: string): Promise<T | null> {
-  const res = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "MediaDiary/1.0" },
-    next: { revalidate: 86400 },
-  });
-  if (!res.ok) return null;
-  return res.json() as Promise<T>;
+  try {
+    const res = await fetch(url, {
+      headers: { Accept: "application/json", "User-Agent": "MediaDiary/1.0" },
+      next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
 }
 
 export function isbnCoverUrl(isbn13: string): string {

@@ -3,6 +3,7 @@ import { splitPeople, isValidCzdbMatch, parseCzdbRating } from "@/lib/czdb";
 import {
   getComposers,
   getCzechOverview,
+  getEnglishTitle,
   getCzechTitle,
   getDirectors,
   getWriters,
@@ -66,7 +67,8 @@ export function buildMovieCardSummary(
 
   return {
     tmdbId: movie.id,
-    czechTitle: trustedCzdb?.nazev ?? getCzechTitle(movie) ?? movie.title,
+    czechTitle:
+      trustedCzdb?.nazev ?? getCzechTitle(movie) ?? getEnglishTitle(movie) ?? movie.title,
     originalTitle: movie.original_title,
     overview: firstText(
       trustedCzdb?.plot,
@@ -89,7 +91,7 @@ export function buildMovieCardSummary(
       splitPeople(trustedCzdb?.herci),
       movie.credits.cast.slice(0, 8).map((c) => c.name),
     ).slice(0, 6),
-    poster: posterUrl(movie.poster_path, "w500") ?? trustedCzdb?.obrazek_url ?? null,
+    poster: posterUrl(movie.poster_path, "w342") ?? trustedCzdb?.obrazek_url ?? null,
     year: movie.release_date?.slice(0, 4) ?? (trustedCzdb?.rok ? String(trustedCzdb.rok) : null),
     runtime: movie.runtime ?? null,
     voteAverage: movie.vote_average,

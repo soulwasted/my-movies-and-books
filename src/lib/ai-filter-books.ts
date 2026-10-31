@@ -6,18 +6,19 @@ export async function filterBookResponse(
   excludedVolumeIds: Set<string>,
   excludedTitles: Array<{ title: string; author: string; year: number }>,
 ): Promise<AiBookStructuredResponse> {
-  const kept: AiBookRecommendation[] = [];
+  const resolved = await Promise.all(
+    response.recommendations.map(async (rec): Promise<AiBookRecommendation | null> => {
+      if (isBookTitleExcluded(rec.title, rec.author, rec.year, excludedTitles)) return null;
+      const volumeId = await resolveBookVolumeId(rec.title, rec.author, rec.year);
+      if (volumeId && excludedVolumeIds.has(volumeId)) return null;
+      return volumeId ? { ...rec, volumeId } : rec;
+    }),
+  );
 
-  for (const rec of response.recommendations) {
-    if (isBookTitleExcluded(rec.title, rec.author, rec.year, excludedTitles)) continue;
-
-    const volumeId = await resolveBookVolumeId(rec.title, rec.author, rec.year);
-    if (volumeId && excludedVolumeIds.has(volumeId)) continue;
-
-    kept.push(rec);
-  }
-
-  return { ...response, recommendations: kept };
+  return {
+    ...response,
+    recommendations: resolved.filter((r): r is AiBookRecommendation => r !== null),
+  };
 }
 
 export async function filterBookToCount(

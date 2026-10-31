@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -13,11 +13,7 @@ import { ReportDataDialog } from "@/components/report-data-dialog";
 import { saveMovieAction, undoMovieAction, recordSeenMovieAction } from "@/lib/actions";
 import type { MovieCardSummary } from "@/lib/movie-card";
 import type { TmdbMovieListItem } from "@/lib/tmdb";
-
-type UndoState = {
-  index: number;
-  movie: TmdbMovieListItem;
-};
+import { useSwipeQueue } from "@/lib/use-swipe-queue";
 
 async function fetchCardSummary(tmdbId: number): Promise<MovieCardSummary | null> {
   const res = await fetch(`/api/movies/${tmdbId}`, { credentials: "include" });
@@ -29,129 +25,42 @@ async function fetchCardSummary(tmdbId: number): Promise<MovieCardSummary | null
 export function SwipeDeck({ locale }: { locale: string }) {
   const t = useTranslations("swipe");
   const tCommon = useTranslations("common");
-  const [movies, setMovies] = useState<TmdbMovieListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [index, setIndex] = useState(0);
   const [ratingMovie, setRatingMovie] = useState<TmdbMovieListItem | null>(null);
   const [reportTmdbId, setReportTmdbId] = useState<number | null>(null);
-  const [cardCache, setCardCache] = useState<Map<number, MovieCardSummary>>(new Map());
-  const [cardLoading, setCardLoading] = useState(false);
-  const [undo, setUndo] = useState<UndoState | null>(null);
-  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const loadQueue = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    setCardCache(new Map());
-    try {
-      const res = await fetch("/api/movies/queue", { credentials: "include" });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? tCommon("error"));
-        setMovies([]);
-        return;
-      }
-      setMovies(data.movies ?? []);
-      setIndex(0);
-      setUndo(null);
-    } catch {
-      setError(tCommon("error"));
-      setMovies([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [tCommon]);
+  const {
+    loading,
+    error,
+    index,
+    current,
+    currentCard,
+    undo,
+    reload,
+    refreshCard,
+    commit,
+    handleUndo,
+  } = useSwipeQueue<TmdbMovieListItem, number, MovieCardSummary>({
+    queueUrl: "/api/movies/queue",
+    readQueue: (data) => (data as { movies?: TmdbMovieListItem[] }).movies ?? [],
+    fetchCard: fetchCardSummary,
+    cardImage: (card) => card.poster,
+    recordSeen: recordSeenMovieAction,
+    undoSave: (id) => undoMovieAction(id, { skipRevalidate: true }),
+    errorText: tCommon("error"),
+  });
 
-  useEffect(() => {
-    loadQueue();
-  }, [loadQueue]);
-
-  const current = movies[index];
-  const currentCard = current ? cardCache.get(current.id) : null;
-
-  const cacheCard = useCallback((id: number, card: MovieCardSummary) => {
-    setCardCache((prev) => {
-      const next = new Map(prev);
-      next.set(id, card);
-      return next;
-    });
-  }, []);
-
-  const refreshCard = useCallback(
-    async (tmdbId: number) => {
-      setCardCache((prev) => {
-        const next = new Map(prev);
-        next.delete(tmdbId);
-        return next;
-      });
-      const card = await fetchCardSummary(tmdbId);
-      if (card) cacheCard(tmdbId, card);
-    },
-    [cacheCard],
-  );
-
-  const ensureCard = useCallback(
-    async (tmdbId: number) => {
-      const card = await fetchCardSummary(tmdbId);
-      if (card) cacheCard(tmdbId, card);
-    },
-    [cacheCard],
-  );
-
-  useEffect(() => {
-    if (!current) return;
-    let cancelled = false;
-
-    (async () => {
-      setCardLoading(true);
-      await ensureCard(current.id);
-      if (cancelled) return;
-      setCardLoading(false);
-
-      const next = movies[index + 1];
-      if (next) await ensureCard(next.id);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [current?.id, index, movies, ensureCard]);
-
-  useEffect(() => {
-    if (!current?.id || !currentCard) return;
-    void recordSeenMovieAction(current.id);
-  }, [current?.id, currentCard]);
-
-  const scheduleUndo = (state: UndoState) => {
-    if (undoTimer.current) clearTimeout(undoTimer.current);
-    setUndo(state);
-    undoTimer.current = setTimeout(() => setUndo(null), 12_000);
-  };
-
-  const advance = (movie: TmdbMovieListItem) => {
-    scheduleUndo({ index, movie });
-    setIndex((i) => i + 1);
-  };
-
-  const handleUndo = async () => {
-    if (!undo) return;
-    await undoMovieAction(undo.movie.id);
-    setIndex(undo.index);
-    setUndo(null);
-    if (undoTimer.current) clearTimeout(undoTimer.current);
-  };
-
-  const handleWant = async () => {
+  const handleWant = () => {
     if (!current || !currentCard) return;
-    await saveMovieAction({ tmdbId: current.id, status: "WANT" });
-    advance(current);
+    commit(current, index, () =>
+      saveMovieAction({ tmdbId: current.id, status: "WANT", skipRevalidate: true }),
+    );
   };
 
-  const handleSkip = async () => {
+  const handleSkip = () => {
     if (!current || !currentCard) return;
-    await saveMovieAction({ tmdbId: current.id, status: "SKIPPED" });
-    advance(current);
+    commit(current, index, () =>
+      saveMovieAction({ tmdbId: current.id, status: "SKIPPED", skipRevalidate: true }),
+    );
   };
 
   const handleWatched = () => {
@@ -166,16 +75,14 @@ export function SwipeDeck({ locale }: { locale: string }) {
     tags?: string[];
   }) => {
     if (!ratingMovie) return;
-    await saveMovieAction({
-      tmdbId: ratingMovie.id,
-      status: "WATCHED",
-      ...data,
-    });
+    const movie = ratingMovie;
     setRatingMovie(null);
-    advance(ratingMovie);
+    commit(movie, index, () =>
+      saveMovieAction({ tmdbId: movie.id, status: "WATCHED", skipRevalidate: true, ...data }),
+    );
   };
 
-  const actionsDisabled = !currentCard || cardLoading;
+  const actionsDisabled = !currentCard;
 
   if (loading) {
     return (
@@ -189,7 +96,7 @@ export function SwipeDeck({ locale }: { locale: string }) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
         <p className="text-muted-foreground">{error ?? t("noMore")}</p>
-        <Button onClick={loadQueue} variant="outline">
+        <Button onClick={reload} variant="outline">
           {tCommon("retry")}
         </Button>
       </div>
@@ -321,9 +228,10 @@ function SwipeCard({
                 src={card.poster}
                 alt={card.czechTitle}
                 fill
+                sizes="(min-width: 768px) 176px, (min-width: 640px) 160px, 140px"
                 className="rounded-lg object-contain"
                 priority
-                unoptimized={card.poster.includes("pmgstatic.com")}
+                unoptimized
               />
             ) : (
               <div className="flex h-full items-center justify-center text-sm text-muted-foreground">

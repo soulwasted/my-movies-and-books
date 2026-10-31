@@ -13,6 +13,8 @@ export async function saveMovieAction(input: {
   ratingType?: "STARS" | "SCALE";
   notes?: string;
   tags?: string[];
+  /** Swipe fronta stav drží na klientu, refresh stránky by ji jen zdržel. */
+  skipRevalidate?: boolean;
 }) {
   const userId = await requireUserId();
 
@@ -36,6 +38,7 @@ export async function saveMovieAction(input: {
     update: data,
   });
 
+  if (input.skipRevalidate) return;
   revalidatePath("/");
   revalidatePath("/library");
 }
@@ -52,11 +55,12 @@ export async function recordSeenMovieAction(tmdbId: number) {
   });
 }
 
-export async function undoMovieAction(tmdbId: number) {
+export async function undoMovieAction(tmdbId: number, options?: { skipRevalidate?: boolean }) {
   const userId = await requireUserId();
   await prisma.userMovie.deleteMany({
     where: { userId, tmdbId },
   });
+  if (options?.skipRevalidate) return;
   revalidatePath("/");
   revalidatePath("/library");
 }
@@ -207,6 +211,8 @@ export async function saveBookAction(input: {
   ratingType?: "STARS" | "SCALE";
   notes?: string;
   tags?: string[];
+  /** Swipe fronta stav drží na klientu, refresh stránky by ji jen zdržel. */
+  skipRevalidate?: boolean;
 }) {
   const userId = await requireUserId();
 
@@ -230,6 +236,7 @@ export async function saveBookAction(input: {
     update: data,
   });
 
+  if (input.skipRevalidate) return;
   revalidatePath("/");
   revalidatePath("/library");
 }
@@ -245,11 +252,12 @@ export async function recordSeenBookAction(googleVolumeId: string) {
   });
 }
 
-export async function undoBookAction(googleVolumeId: string) {
+export async function undoBookAction(googleVolumeId: string, options?: { skipRevalidate?: boolean }) {
   const userId = await requireUserId();
   await prisma.userBook.deleteMany({
     where: { userId, googleVolumeId },
   });
+  if (options?.skipRevalidate) return;
   revalidatePath("/");
   revalidatePath("/library");
 }

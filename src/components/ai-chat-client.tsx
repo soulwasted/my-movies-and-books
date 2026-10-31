@@ -11,53 +11,65 @@ import type { AiStructuredResponse } from "@/lib/ai";
 
 type ChatMessage =
   | { role: "user"; text: string }
-  | { role: "ai"; response: AiStructuredResponse; media: "movie" | "book" };
+  | { role: "ai"; response: AiStructuredResponse; media: "movie" | "book" }
+  | { role: "error"; text: string };
+
+/** Textová podoba odpovědi AI, aby model v dalším tahu věděl, co už doporučil. */
+function responseAsText(response: AiStructuredResponse): string {
+  const recs = response.recommendations
+    .map((r) => `- ${r.title} (${r.year})${r.author ? `, ${r.author}` : ""}`)
+    .join("\n");
+  return [response.summary, recs, response.followUp].filter(Boolean).join("\n\n");
+}
 
 export function AiChatClient({ locale }: { locale: string }) {
   const t = useTranslations("ai");
+  const tCommon = useTranslations("common");
   const [media, setMedia] = useState<"movie" | "book">("movie");
   const [message, setMessage] = useState("");
   const [history, setHistory] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const send = async (text: string) => {
-    if (!text.trim()) return;
-    setHistory((h) => [...h, { role: "user", text }]);
-    setMessage("");
+  const ask = async (payload: Record<string, unknown>) => {
     setLoading(true);
     try {
       const res = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "chat", locale, message: text, media }),
+        body: JSON.stringify({ locale, media, ...payload }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.response) {
+        setHistory((h) => [...h, { role: "error", text: data.error ?? tCommon("error") }]);
+        return;
+      }
       setHistory((h) => [
         ...h,
         { role: "ai", response: data.response, media: data.media ?? media },
       ]);
+    } catch {
+      setHistory((h) => [...h, { role: "error", text: tCommon("error") }]);
     } finally {
       setLoading(false);
     }
   };
 
-  const recommend = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "recommend", locale, media }),
-      });
-      const data = await res.json();
-      setHistory((h) => [
-        ...h,
-        { role: "ai", response: data.response, media: data.media ?? media },
-      ]);
-    } finally {
-      setLoading(false);
-    }
+  const send = async (text: string) => {
+    if (!text.trim() || loading) return;
+    // Kontext konverzace pro aktuální typ média (filmy a knihy se nemíchají).
+    const context = history.flatMap((msg) => {
+      if (msg.role === "user") return [{ role: "user", content: msg.text }];
+      if (msg.role === "ai" && msg.media === media) {
+        return [{ role: "assistant", content: responseAsText(msg.response) }];
+      }
+      return [];
+    });
+    setHistory((h) => [...h, { role: "user", text }]);
+    setMessage("");
+    await ask({ type: "chat", message: text, history: context });
   };
+
+  const recommend = () => ask({ type: "recommend" });
 
   return (
     <div className="mt-4 flex flex-1 flex-col gap-4">
@@ -83,10 +95,12 @@ export function AiChatClient({ locale }: { locale: string }) {
             className={`rounded-xl px-4 py-3 text-sm ${
               msg.role === "user"
                 ? "ml-8 bg-primary text-primary-foreground"
-                : "mr-8 bg-muted text-muted-foreground"
+                : msg.role === "error"
+                  ? "mr-8 border border-destructive/40 bg-destructive/10 text-destructive"
+                  : "mr-8 bg-muted text-muted-foreground"
             }`}
           >
-            {msg.role === "user" ? (
+            {msg.role !== "ai" ? (
               msg.text
             ) : (
               <AiResponseView

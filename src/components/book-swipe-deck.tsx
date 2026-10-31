@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -13,11 +13,7 @@ import { ReportBookDialog } from "@/components/report-book-dialog";
 import { saveBookAction, undoBookAction, recordSeenBookAction } from "@/lib/actions";
 import type { BookCardSummary } from "@/lib/book-card";
 import type { GoogleBookListItem } from "@/lib/google-books";
-
-type UndoState = {
-  index: number;
-  book: GoogleBookListItem;
-};
+import { useSwipeQueue } from "@/lib/use-swipe-queue";
 
 async function fetchCardSummary(volumeId: string): Promise<BookCardSummary | null> {
   const res = await fetch(`/api/books/${encodeURIComponent(volumeId)}`, {
@@ -31,131 +27,42 @@ async function fetchCardSummary(volumeId: string): Promise<BookCardSummary | nul
 export function BookSwipeDeck({ locale }: { locale: string }) {
   const t = useTranslations("bookSwipe");
   const tCommon = useTranslations("common");
-  const [books, setBooks] = useState<GoogleBookListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [index, setIndex] = useState(0);
   const [ratingBook, setRatingBook] = useState<GoogleBookListItem | null>(null);
   const [reportVolumeId, setReportVolumeId] = useState<string | null>(null);
-  const [cardCache, setCardCache] = useState<Map<string, BookCardSummary>>(new Map());
-  const [cardLoading, setCardLoading] = useState(false);
-  const [undo, setUndo] = useState<UndoState | null>(null);
-  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const loadQueue = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    setCardCache(new Map());
-    try {
-      const res = await fetch(`/api/books/queue?locale=${locale}`, {
-        credentials: "include",
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? tCommon("error"));
-        setBooks([]);
-        return;
-      }
-      setBooks(data.books ?? []);
-      setIndex(0);
-      setUndo(null);
-    } catch {
-      setError(tCommon("error"));
-      setBooks([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [tCommon, locale]);
+  const {
+    loading,
+    error,
+    index,
+    current,
+    currentCard,
+    undo,
+    reload,
+    refreshCard,
+    commit,
+    handleUndo,
+  } = useSwipeQueue<GoogleBookListItem, string, BookCardSummary>({
+    queueUrl: `/api/books/queue?locale=${locale}`,
+    readQueue: (data) => (data as { books?: GoogleBookListItem[] }).books ?? [],
+    fetchCard: fetchCardSummary,
+    cardImage: (card) => card.cover,
+    recordSeen: recordSeenBookAction,
+    undoSave: (id) => undoBookAction(id, { skipRevalidate: true }),
+    errorText: tCommon("error"),
+  });
 
-  useEffect(() => {
-    loadQueue();
-  }, [loadQueue]);
-
-  const current = books[index];
-  const currentCard = current ? cardCache.get(current.id) : null;
-
-  const cacheCard = useCallback((id: string, card: BookCardSummary) => {
-    setCardCache((prev) => {
-      const next = new Map(prev);
-      next.set(id, card);
-      return next;
-    });
-  }, []);
-
-  const refreshCard = useCallback(
-    async (volumeId: string) => {
-      setCardCache((prev) => {
-        const next = new Map(prev);
-        next.delete(volumeId);
-        return next;
-      });
-      const card = await fetchCardSummary(volumeId);
-      if (card) cacheCard(volumeId, card);
-    },
-    [cacheCard],
-  );
-
-  const ensureCard = useCallback(
-    async (volumeId: string) => {
-      const card = await fetchCardSummary(volumeId);
-      if (card) cacheCard(volumeId, card);
-    },
-    [cacheCard],
-  );
-
-  useEffect(() => {
-    if (!current) return;
-    let cancelled = false;
-
-    (async () => {
-      setCardLoading(true);
-      await ensureCard(current.id);
-      if (cancelled) return;
-      setCardLoading(false);
-
-      const next = books[index + 1];
-      if (next) await ensureCard(next.id);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [current?.id, index, books, ensureCard]);
-
-  useEffect(() => {
-    if (!current?.id || !currentCard) return;
-    void recordSeenBookAction(current.id);
-  }, [current?.id, currentCard]);
-
-  const scheduleUndo = (state: UndoState) => {
-    if (undoTimer.current) clearTimeout(undoTimer.current);
-    setUndo(state);
-    undoTimer.current = setTimeout(() => setUndo(null), 12_000);
-  };
-
-  const advance = (book: GoogleBookListItem) => {
-    scheduleUndo({ index, book });
-    setIndex((i) => i + 1);
-  };
-
-  const handleUndo = async () => {
-    if (!undo) return;
-    await undoBookAction(undo.book.id);
-    setIndex(undo.index);
-    setUndo(null);
-    if (undoTimer.current) clearTimeout(undoTimer.current);
-  };
-
-  const handleWant = async () => {
+  const handleWant = () => {
     if (!current || !currentCard) return;
-    await saveBookAction({ googleVolumeId: current.id, status: "WANT" });
-    advance(current);
+    commit(current, index, () =>
+      saveBookAction({ googleVolumeId: current.id, status: "WANT", skipRevalidate: true }),
+    );
   };
 
-  const handleSkip = async () => {
+  const handleSkip = () => {
     if (!current || !currentCard) return;
-    await saveBookAction({ googleVolumeId: current.id, status: "SKIPPED" });
-    advance(current);
+    commit(current, index, () =>
+      saveBookAction({ googleVolumeId: current.id, status: "SKIPPED", skipRevalidate: true }),
+    );
   };
 
   const handleRead = () => {
@@ -170,16 +77,19 @@ export function BookSwipeDeck({ locale }: { locale: string }) {
     tags?: string[];
   }) => {
     if (!ratingBook) return;
-    await saveBookAction({
-      googleVolumeId: ratingBook.id,
-      status: "READ",
-      ...data,
-    });
+    const book = ratingBook;
     setRatingBook(null);
-    advance(ratingBook);
+    commit(book, index, () =>
+      saveBookAction({
+        googleVolumeId: book.id,
+        status: "READ",
+        skipRevalidate: true,
+        ...data,
+      }),
+    );
   };
 
-  const actionsDisabled = !currentCard || cardLoading;
+  const actionsDisabled = !currentCard;
 
   if (loading) {
     return (
@@ -193,7 +103,7 @@ export function BookSwipeDeck({ locale }: { locale: string }) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
         <p className="text-muted-foreground">{error ?? t("noMore")}</p>
-        <Button onClick={loadQueue} variant="outline">
+        <Button onClick={reload} variant="outline">
           {tCommon("retry")}
         </Button>
       </div>
@@ -323,6 +233,7 @@ function BookSwipeCard({
                 src={card.cover}
                 alt={card.title}
                 fill
+                sizes="(min-width: 768px) 176px, (min-width: 640px) 160px, 140px"
                 className="rounded-lg object-contain"
                 priority
                 unoptimized

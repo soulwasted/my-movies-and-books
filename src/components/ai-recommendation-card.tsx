@@ -67,15 +67,17 @@ export function AiRecommendationCard({
 }) {
   const t = useTranslations("swipe");
   const tAi = useTranslations("ai");
-  const [tmdbId, setTmdbId] = useState<number | null>(null);
+  const [tmdbId, setTmdbId] = useState<number | null>(rec.tmdbId ?? null);
   const [status, setStatus] = useState<MovieStatus | null>(null);
-  const [resolving, setResolving] = useState(true);
+  const [resolving, setResolving] = useState(!rec.tmdbId);
   const [acting, setActing] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
   const [ratingTmdbId, setRatingTmdbId] = useState<number | null>(null);
 
   useEffect(() => {
+    // Server už film dohledal při filtrování, není co řešit.
+    if (rec.tmdbId) return;
     let cancelled = false;
     (async () => {
       setResolving(true);
@@ -89,7 +91,7 @@ export function AiRecommendationCard({
     return () => {
       cancelled = true;
     };
-  }, [rec.title, rec.year]);
+  }, [rec.title, rec.year, rec.tmdbId]);
 
   const ensureId = useCallback(async () => {
     if (tmdbId) return tmdbId;

@@ -39,16 +39,22 @@ async function czdbFetch(params: Record<string, string>): Promise<CzdbResponse |
   const url = new URL(CZDB_BASE);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
 
-  const res = await fetch(url.toString(), {
-    headers: { Accept: "application/json" },
-    next: { revalidate: 86400 },
-  });
+  try {
+    const res = await fetch(url.toString(), {
+      headers: { Accept: "application/json" },
+      next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(4000),
+    });
 
-  if (!res.ok) return false;
+    if (!res.ok) return false;
 
-  const data = (await res.json()) as CzdbResponse | false;
-  if (data === false || !data?.results?.length) return false;
-  return data;
+    const data = (await res.json()) as CzdbResponse | false;
+    if (data === false || !data?.results?.length) return false;
+    return data;
+  } catch {
+    // CZDB je best-effort: timeout nebo výpadek nesmí zdržet kartu filmu.
+    return false;
+  }
 }
 
 export function parseCzdbRating(hodnoceni: string | null | undefined): number | null {
@@ -170,18 +176,16 @@ export async function resolveCzdbForMovie(options: {
     options.originalTitle,
   ].filter((t, i, arr) => t && arr.indexOf(t) === i) as string[];
 
-  if (options.imdbId) {
-    const data = await czdbFetch({ i: options.imdbId });
-    if (data) {
-      const match = pickFromResults(data.results, options);
-      if (match) return match;
-    }
-  }
+  // Všechny dotazy paralelně, výsledek se vybírá v pořadí priority (IMDb, pak tituly).
+  const queries: Record<string, string>[] = [
+    ...(options.imdbId ? [{ i: options.imdbId }] : []),
+    ...searchTitles.map((title): Record<string, string> =>
+      options.year ? { q: title, y: options.year } : { q: title },
+    ),
+  ];
+  const responses = await Promise.all(queries.map((params) => czdbFetch(params)));
 
-  for (const title of searchTitles) {
-    const params: Record<string, string> = { q: title };
-    if (options.year) params.y = options.year;
-    const data = await czdbFetch(params);
+  for (const data of responses) {
     if (!data) continue;
     const match = pickFromResults(data.results, options);
     if (match) return match;

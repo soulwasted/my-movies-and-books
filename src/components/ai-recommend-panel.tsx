@@ -17,9 +17,11 @@ export function AiRecommendPanel({
   const t = useTranslations("movie");
   const [response, setResponse] = useState<AiStructuredResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchWhy = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/ai", {
         method: "POST",
@@ -33,8 +35,14 @@ export function AiRecommendPanel({
               : `Why might I like "${movieTitle}"? What similar films do you recommend?`,
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.response) {
+        setError(data.error ?? "AI error");
+        return;
+      }
       setResponse(data.response);
+    } catch {
+      setError("AI error");
     } finally {
       setLoading(false);
     }
@@ -49,6 +57,7 @@ export function AiRecommendPanel({
           AI
         </Button>
       </div>
+      {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
       {response && (
         <div className="mt-3">
           <AiResponseView data={response} locale={locale} />
