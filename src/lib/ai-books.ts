@@ -12,6 +12,8 @@ export type UserBookTasteProfile = {
   locale: "cs" | "en";
   read: Array<{ title: string; author: string; rating?: number | null; categories: string[] }>;
   wantList: string[];
+  /** Tituly označené „nechci vidět/číst“: negativní signál vkusu. */
+  notInterested: string[];
   excludedTitles: Array<{ title: string; author: string; year: number }>;
   excludedVolumeIds: string[];
   favoriteCategories: string[];
@@ -71,12 +73,14 @@ function profileBlock(profile: UserBookTasteProfile): string {
     ? `Oblíbené kategorie: ${profile.favoriteCategories.join(", ") || "neuvedeno"}
 Přečteno (nedávno): ${profile.read.slice(0, 15).map((b) => `${b.title} (${b.author})`).join(", ") || "nic"}
 Chci číst: ${profile.wantList.slice(0, 15).join(", ") || "prázdný"}
+Nezajímá ho (vyhýbej se podobným): ${profile.notInterested.slice(0, 15).join(", ") || "nic"}
 
 ZAKÁZANÉ tituly — už přečteno nebo v seznamu chci číst, NIKDY je nedoporučuj:
 ${excludedList}`
     : `Favorite categories: ${profile.favoriteCategories.join(", ") || "none"}
 Recently read: ${profile.read.slice(0, 15).map((b) => `${b.title} (${b.author})`).join(", ") || "none"}
 Want to read: ${profile.wantList.slice(0, 15).join(", ") || "empty"}
+Not interested (avoid similar): ${profile.notInterested.slice(0, 15).join(", ") || "none"}
 
 FORBIDDEN titles — already read or on wishlist, NEVER recommend:
 ${excludedList}`;

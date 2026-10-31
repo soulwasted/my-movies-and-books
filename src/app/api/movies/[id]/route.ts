@@ -1,10 +1,11 @@
 import { getSessionUserId, requireUserId } from "@/lib/user";
 import { prisma } from "@/lib/db";
-import { getMovieDetails, isTmdbConfigured } from "@/lib/tmdb";
+import { getMovieDetails, getCzechTitle, getEnglishTitle, isTmdbConfigured } from "@/lib/tmdb";
 import {
   resolveCzdbForMovie,
   parseCzdbRating,
   splitPeople,
+  normalizeCzdbFilm,
   type CzdbFilm,
 } from "@/lib/czdb";
 import { buildMovieCardSummary } from "@/lib/movie-card";
@@ -41,7 +42,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     !cached?.csfdUpdated ||
     Date.now() - cached.csfdUpdated.getTime() > 7 * 24 * 60 * 60 * 1000;
 
-  let czdbFilm: CzdbFilm | null = cached?.czdbData ? JSON.parse(cached.czdbData) : null;
+  let czdbFilm: CzdbFilm | null = cached?.czdbData ? normalizeCzdbFilm(JSON.parse(cached.czdbData)) : null;
   let csfdRating = cached?.csfdRating ?? null;
   let csfdUrl = cached?.csfdUrl ?? null;
 
@@ -56,6 +57,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     czdbFilm = await resolveCzdbForMovie({
       title: movieData.title,
       originalTitle: movieData.original_title,
+      extraTitles: [getEnglishTitle(movieData), getCzechTitle(movieData)],
       year,
       imdbId: movieData.imdb_id,
       tmdbId,

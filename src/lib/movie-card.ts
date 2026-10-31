@@ -25,6 +25,7 @@ export type MovieCardSummary = {
   runtime: number | null;
   voteAverage: number;
   csfdRating: number | null;
+  genres: string[];
 };
 
 function firstText(...values: (string | null | undefined)[]): string {
@@ -61,6 +62,7 @@ export function buildMovieCardSummary(
       tmdbId: movie.id,
       imdbId: movie.imdb_id,
       year: movie.release_date?.slice(0, 4),
+      titles: [movie.title, movie.original_title, getEnglishTitle(movie), getCzechTitle(movie)],
     });
 
   const trustedCzdb = czdbTrusted ? czdb : null;
@@ -96,5 +98,9 @@ export function buildMovieCardSummary(
     runtime: movie.runtime ?? null,
     voteAverage: movie.vote_average,
     csfdRating: trustedCzdb ? parseCzdbRating(trustedCzdb.hodnoceni) : null,
+    // TMDB vrací názvy žánrů v jazyce dotazu (cs-CZ), CZDB jako záloha.
+    genres: movie.genres?.length
+      ? movie.genres.map((g) => g.name)
+      : splitPeople(trustedCzdb?.zanr),
   };
 }

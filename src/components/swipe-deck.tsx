@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Eye, EyeOff, Heart, Flag, Star, Undo2 } from "lucide-react";
+import { Eye, Heart, Flag, Sparkles, Star, ThumbsDown, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RatingDialog } from "@/components/rating-dialog";
@@ -14,6 +14,7 @@ import { saveMovieAction, undoMovieAction, recordSeenMovieAction } from "@/lib/a
 import type { MovieCardSummary } from "@/lib/movie-card";
 import type { TmdbMovieListItem } from "@/lib/tmdb";
 import { useSwipeQueue } from "@/lib/use-swipe-queue";
+import type { QueueMovie, QueueReason } from "@/lib/queue-types";
 
 async function fetchCardSummary(tmdbId: number): Promise<MovieCardSummary | null> {
   const res = await fetch(`/api/movies/${tmdbId}`, { credentials: "include" });
@@ -39,9 +40,9 @@ export function SwipeDeck({ locale }: { locale: string }) {
     refreshCard,
     commit,
     handleUndo,
-  } = useSwipeQueue<TmdbMovieListItem, number, MovieCardSummary>({
+  } = useSwipeQueue<QueueMovie, number, MovieCardSummary>({
     queueUrl: "/api/movies/queue",
-    readQueue: (data) => (data as { movies?: TmdbMovieListItem[] }).movies ?? [],
+    readQueue: (data) => (data as { movies?: QueueMovie[] }).movies ?? [],
     fetchCard: fetchCardSummary,
     cardImage: (card) => card.poster,
     recordSeen: recordSeenMovieAction,
@@ -60,6 +61,13 @@ export function SwipeDeck({ locale }: { locale: string }) {
     if (!current || !currentCard) return;
     commit(current, index, () =>
       saveMovieAction({ tmdbId: current.id, status: "SKIPPED", skipRevalidate: true }),
+    );
+  };
+
+  const handleNotInterested = () => {
+    if (!current || !currentCard) return;
+    commit(current, index, () =>
+      saveMovieAction({ tmdbId: current.id, status: "NOT_INTERESTED", skipRevalidate: true }),
     );
   };
 
@@ -111,6 +119,7 @@ export function SwipeDeck({ locale }: { locale: string }) {
             <SwipeCard
               key={current.id}
               card={currentCard}
+              reason={current.reason}
               locale={locale}
               onReport={() => setReportTmdbId(current.id)}
             />
@@ -130,34 +139,45 @@ export function SwipeDeck({ locale }: { locale: string }) {
       )}
 
       <div className="sticky bottom-20 z-10 mt-4 rounded-2xl border border-border/60 bg-background/95 p-3 shadow-lg backdrop-blur-sm">
+        {/* Tři rozhodnutí se signálem vkusu, stejný vzhled pro všechna. */}
         <div className="grid grid-cols-3 gap-2">
           <Button
             variant="outline"
             disabled={actionsDisabled}
-            className="h-auto flex-col gap-1 py-3 text-destructive hover:text-destructive"
-            onClick={handleSkip}
-          >
-            <EyeOff className="h-5 w-5" />
-            <span className="text-xs font-medium">{t("skip")}</span>
-          </Button>
-          <Button
-            disabled={actionsDisabled}
-            className="h-auto flex-col gap-1 bg-emerald-600 py-3 hover:bg-emerald-500"
+            className="h-auto flex-col gap-1 py-3"
             onClick={handleWatched}
           >
-            <Star className="h-5 w-5 fill-current" />
+            <Star className="h-5 w-5" />
             <span className="text-xs font-medium">{t("watched")}</span>
           </Button>
           <Button
             variant="outline"
             disabled={actionsDisabled}
-            className="h-auto flex-col gap-1 text-pink-400 hover:text-pink-300"
+            className="h-auto flex-col gap-1 py-3"
             onClick={handleWant}
           >
             <Heart className="h-5 w-5" />
             <span className="text-xs font-medium">{t("want")}</span>
           </Button>
+          <Button
+            variant="outline"
+            disabled={actionsDisabled}
+            className="h-auto flex-col gap-1 py-3"
+            onClick={handleNotInterested}
+          >
+            <ThumbsDown className="h-5 w-5" />
+            <span className="text-xs font-medium">{t("notInterested")}</span>
+          </Button>
         </div>
+        {/* Přeskočit je neutrální: nic se nenaučí, film zůstane v historii nabídky. */}
+        <button
+          type="button"
+          disabled={actionsDisabled}
+          onClick={handleSkip}
+          className="mt-2 w-full text-center text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+        >
+          {t("skip")}
+        </button>
       </div>
 
       <RatingDialog
@@ -197,12 +217,30 @@ function CardSkeleton() {
   );
 }
 
+function ReasonChip({ reason }: { reason: QueueReason }) {
+  const t = useTranslations("swipe");
+  const text =
+    reason.type === "because"
+      ? t("reasonBecause", { title: reason.title })
+      : reason.type === "genres"
+        ? t("reasonGenres", { genres: reason.names.join(", ") })
+        : t("reasonExplore");
+  return (
+    <p className="flex items-center gap-1.5 text-xs text-primary">
+      <Sparkles className="h-3.5 w-3.5 shrink-0" />
+      <span>{text}</span>
+    </p>
+  );
+}
+
 function SwipeCard({
   card,
+  reason,
   locale,
   onReport,
 }: {
   card: MovieCardSummary;
+  reason?: QueueReason;
   locale: string;
   onReport: () => void;
 }) {
@@ -259,6 +297,18 @@ function SwipeCard({
               <span className="hidden sm:inline">{tReport("button")}</span>
             </Button>
           </div>
+
+          {reason && <ReasonChip reason={reason} />}
+
+          {card.genres.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {card.genres.slice(0, 4).map((genre) => (
+                <Badge key={genre} variant="outline" className="text-xs font-normal">
+                  {genre}
+                </Badge>
+              ))}
+            </div>
+          )}
 
           <div className="flex flex-wrap items-center gap-2">
             {card.year && <span className="text-sm text-muted-foreground">{card.year}</span>}

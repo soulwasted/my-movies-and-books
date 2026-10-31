@@ -36,7 +36,7 @@ async function buildMovieProfile(userId: string, locale: "cs" | "en"): Promise<U
   }
 
   const excludedRows = await prisma.userMovie.findMany({
-    where: { userId, status: { in: ["WATCHED", "WANT"] } },
+    where: { userId, status: { in: ["WATCHED", "WANT", "NOT_INTERESTED"] } },
     select: { tmdbId: true, status: true, rating: true, ratingType: true, updatedAt: true },
     orderBy: { updatedAt: "desc" },
   });
@@ -44,6 +44,7 @@ async function buildMovieProfile(userId: string, locale: "cs" | "en"): Promise<U
   const excludedTmdbIds = excludedRows.map((r) => r.tmdbId);
   const excludedTitles: Array<{ title: string; year: number }> = [];
   const wantList: string[] = [];
+  const notInterested: string[] = [];
   const watched: UserTasteProfile["watched"] = [];
 
   // Detaily z DB cache (jeden dotaz); TMDB jen pro filmy, které v cache chybí.
@@ -66,6 +67,9 @@ async function buildMovieProfile(userId: string, locale: "cs" | "en"): Promise<U
 
           if (um.status === "WANT") {
             wantList.push(label);
+          }
+          if (um.status === "NOT_INTERESTED") {
+            notInterested.push(label);
           }
           if (um.status === "WATCHED") {
             watched.push({
@@ -92,6 +96,7 @@ async function buildMovieProfile(userId: string, locale: "cs" | "en"): Promise<U
     locale,
     watched,
     wantList,
+    notInterested,
     excludedTitles,
     excludedTmdbIds,
     favoriteGenres,
@@ -111,7 +116,7 @@ async function buildBookProfile(
   const favoriteCategories = getCategoryNames(categoryIds, locale);
 
   const excludedRows = await prisma.userBook.findMany({
-    where: { userId, status: { in: ["READ", "WANT"] } },
+    where: { userId, status: { in: ["READ", "WANT", "NOT_INTERESTED"] } },
     select: {
       googleVolumeId: true,
       status: true,
@@ -125,6 +130,7 @@ async function buildBookProfile(
   const excludedVolumeIds = excludedRows.map((r) => r.googleVolumeId);
   const excludedTitles: Array<{ title: string; author: string; year: number }> = [];
   const wantList: string[] = [];
+  const notInterested: string[] = [];
   const read: UserBookTasteProfile["read"] = [];
 
   const cachedRows = await prisma.bookCache.findMany({
@@ -147,6 +153,9 @@ async function buildBookProfile(
 
           if (ub.status === "WANT") {
             wantList.push(`${b.title} (${author})`);
+          }
+          if (ub.status === "NOT_INTERESTED") {
+            notInterested.push(`${b.title} (${author})`);
           }
           if (ub.status === "READ") {
             read.push({
@@ -174,6 +183,7 @@ async function buildBookProfile(
     locale,
     read,
     wantList,
+    notInterested,
     excludedTitles,
     excludedVolumeIds,
     favoriteCategories,

@@ -38,7 +38,7 @@
   "swipe": {
     "watched": "Viděl",
     "want": "Chci vidět",
-    "skip": "Neviděl",
+    "skip": "Přeskočit",
     "noMore": "Pro dnešek to stačí — zítra přidáme další!",
     "rateTitle": "Jak se ti líbil?",
     "notes": "Poznámka (volitelné)",
@@ -48,14 +48,19 @@
     "scale": "1–10",
     "save": "Uložit",
     "todayPicks": "Dnešní tipy",
-    "undo": "Vrátit předchozí film"
+    "undo": "Vrátit předchozí film",
+    "notInterested": "Nezajímá mě",
+    "reasonBecause": "Podobné jako {title}",
+    "reasonGenres": "Sedí tvému vkusu: {genres}",
+    "reasonExplore": "Objevování mimo tvou bublinu"
   },
   "bookSwipe": {
     "read": "Přečteno",
     "want": "Chci číst",
     "skip": "Přeskočit",
     "noMore": "Pro dnešek to stačí — zítra přidáme další knihy!",
-    "undo": "Vrátit předchozí knihu"
+    "undo": "Vrátit předchozí knihu",
+    "notInterested": "Nezajímá mě"
   },
   "movie": {
     "director": "Režie",
@@ -127,13 +132,15 @@
     "history": "Historie",
     "historyEmpty": "Historie je prázdná — filmy se ukládají, jak procházejí nabídkou.",
     "bookHistoryEmpty": "Historie je prázdná — knihy se ukládají, jak procházejí nabídkou.",
-    "historyHint": "Všechny filmy z nabídky včetně přeskočených. Klikni a vrať se k detailu nebo ohodnocení.",
+    "historyHint": "Všechno, co ti fronta ukázala. Filtruj podle stavu a rozhodni znovu přímo z karty.",
     "bookHistoryHint": "Všechny knihy z nabídky včetně přeskočených. Klikni a vrať se k detailu nebo ohodnocení.",
     "statusSeen": "Prošlo nabídkou",
-    "statusSkipped": "Neviděl",
+    "statusSkipped": "Přeskočeno",
     "statusWant": "Chci vidět",
     "statusWatched": "Viděl jsem",
-    "statusRead": "Přečteno"
+    "statusRead": "Přečteno",
+    "statusNotInterested": "Nezajímá mě",
+    "filterAll": "Vše"
   },
   "stats": {
     "title": "Statistiky",

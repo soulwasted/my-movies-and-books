@@ -7,7 +7,7 @@ import { RatingDialog } from "@/components/rating-dialog";
 import { StarRatingDisplay } from "@/components/star-rating-display";
 import { saveBookAction } from "@/lib/actions";
 import { normalizeToScale } from "@/lib/rating";
-import { Heart, Check } from "lucide-react";
+import { Heart, Check, ThumbsDown } from "lucide-react";
 
 type UserBook = {
   status: string;
@@ -32,7 +32,7 @@ export function BookActions({
   const [ratingOpen, setRatingOpen] = useState(false);
 
   const update = async (
-    newStatus: "READ" | "WANT" | "SKIPPED",
+    newStatus: "READ" | "WANT" | "SKIPPED" | "NOT_INTERESTED",
     data?: {
       rating?: number;
       ratingType?: "STARS" | "SCALE";
@@ -81,6 +81,13 @@ export function BookActions({
           onClick={() => update("WANT")}
         >
           <Heart className="mr-1 h-4 w-4" /> {t("want")}
+        </Button>
+        <Button
+          variant={status === "NOT_INTERESTED" ? "default" : "outline"}
+          size="sm"
+          onClick={() => update("NOT_INTERESTED")}
+        >
+          <ThumbsDown className="mr-1 h-4 w-4" /> {t("notInterested")}
         </Button>
         {rating != null && status === "READ" && (
           <button

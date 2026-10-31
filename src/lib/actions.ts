@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
 
 export async function saveMovieAction(input: {
   tmdbId: number;
-  status: "WATCHED" | "WANT" | "SKIPPED";
+  status: "WATCHED" | "WANT" | "SKIPPED" | "NOT_INTERESTED";
   rating?: number;
   ratingType?: "STARS" | "SCALE";
   notes?: string;
@@ -206,7 +206,7 @@ export async function getUserStats() {
 
 export async function saveBookAction(input: {
   googleVolumeId: string;
-  status: "READ" | "WANT" | "SKIPPED";
+  status: "READ" | "WANT" | "SKIPPED" | "NOT_INTERESTED";
   rating?: number;
   ratingType?: "STARS" | "SCALE";
   notes?: string;

@@ -38,7 +38,7 @@
   "swipe": {
     "watched": "Watched",
     "want": "Want to watch",
-    "skip": "Not seen",
+    "skip": "Skip",
     "noMore": "That's all for today — more picks tomorrow!",
     "rateTitle": "How did you like it?",
     "notes": "Notes (optional)",
@@ -48,14 +48,19 @@
     "scale": "1–10",
     "save": "Save",
     "todayPicks": "Today's picks",
-    "undo": "Undo last movie"
+    "undo": "Undo last movie",
+    "notInterested": "Not for me",
+    "reasonBecause": "Similar to {title}",
+    "reasonGenres": "Matches your taste: {genres}",
+    "reasonExplore": "Exploring outside your bubble"
   },
   "bookSwipe": {
     "read": "Read",
     "want": "Want to read",
     "skip": "Skip",
     "noMore": "That's all for today — more books tomorrow!",
-    "undo": "Undo last book"
+    "undo": "Undo last book",
+    "notInterested": "Not for me"
   },
   "movie": {
     "director": "Director",
@@ -127,13 +132,15 @@
     "history": "History",
     "historyEmpty": "No history yet — movies are saved as they pass through your feed.",
     "bookHistoryEmpty": "No history yet — books are saved as they pass through your feed.",
-    "historyHint": "Every movie from your feed, including skipped ones. Tap to open details or rate.",
+    "historyHint": "Everything the queue has shown you. Filter by status and decide again right from the card.",
     "bookHistoryHint": "Every book from your feed, including skipped ones. Tap to open details or rate.",
     "statusSeen": "In feed",
     "statusSkipped": "Skipped",
     "statusWant": "Want to watch",
     "statusWatched": "Watched",
-    "statusRead": "Read"
+    "statusRead": "Read",
+    "statusNotInterested": "Not interested",
+    "filterAll": "All"
   },
   "stats": {
     "title": "Statistics",

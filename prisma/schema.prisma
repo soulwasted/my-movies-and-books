@@ -17,6 +17,7 @@ model User {
   books       UserBook[]
   dataReports MovieDataReport[]
   bookReports BookDataReport[]
+  tasteProfiles TasteProfile[]
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 }
@@ -38,6 +39,7 @@ enum MovieStatus {
   WATCHED
   WANT
   SKIPPED
+  NOT_INTERESTED
 }
 
 enum RatingType {
@@ -94,6 +96,7 @@ enum BookStatus {
   READ
   WANT
   SKIPPED
+  NOT_INTERESTED
 }
 
 model UserBook {
@@ -140,4 +143,19 @@ model BookDataReport {
 
   @@index([googleVolumeId])
   @@index([userId])
+}
+
+/// Profil vkusu, který Claude přepočítává na pozadí (po dávce rozhodnutí).
+model TasteProfile {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media         String   // "movie" | "book"
+  summary       String
+  picks         String   @default("[]") // JSON: [{ title, year, reason, tmdbId? }]
+  decisionCount Int      @default(0)     // počet rozhodnutí v době výpočtu
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, media])
 }

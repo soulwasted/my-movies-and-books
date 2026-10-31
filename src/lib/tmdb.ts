@@ -11,6 +11,7 @@ export type TmdbMovieListItem = {
   release_date: string;
   vote_average: number;
   genre_ids: number[];
+  original_language?: string;
   runtime?: number;
 };
 
@@ -48,6 +49,8 @@ export type TmdbMovieDetail = {
     crew: TmdbCreditPerson[];
   };
   videos: { results: TmdbVideo[] };
+  recommendations?: { results: TmdbMovieListItem[] };
+  similar?: { results: TmdbMovieListItem[] };
   translations?: {
     translations: Array<{
       iso_3166_1: string;
@@ -102,21 +105,34 @@ export function posterUrl(
   return `${TMDB_IMAGE}/${size}${path}`;
 }
 
+export function backdropUrl(path: string | null) {
+  if (!path) return null;
+  return `${TMDB_IMAGE}/w1280${path}`;
+}
+
 export function profileUrl(path: string | null) {
   if (!path) return null;
   return `${TMDB_IMAGE}/w185${path}`;
 }
 
-export async function getGenres(): Promise<TmdbGenre[]> {
-  const data = await tmdbFetch<{ genres: TmdbGenre[] }>("/genre/movie/list", { language: "en-US" });
+export async function getGenres(language = "en-US"): Promise<TmdbGenre[]> {
+  const data = await tmdbFetch<{ genres: TmdbGenre[] }>("/genre/movie/list", { language });
   return data.genres;
+}
+
+/** TMDB doporučení k filmu (podobné publikum), nejsilnější zdroj kandidátů. */
+export async function getMovieRecommendations(id: number, page = 1) {
+  return tmdbFetch<{ results: TmdbMovieListItem[] }>(`/movie/${id}/recommendations`, {
+    language: "cs-CZ",
+    page: String(page),
+  });
 }
 
 export async function getMovieDetails(id: number, locale = "cs-CZ"): Promise<TmdbMovieDetail> {
   // Jeden request místo čtyř: credits, videos a translations přes append_to_response.
   return tmdbFetch<TmdbMovieDetail>(`/movie/${id}`, {
     language: locale,
-    append_to_response: "external_ids,credits,videos,translations",
+    append_to_response: "external_ids,credits,videos,translations,recommendations,similar",
   });
 }
 
@@ -204,6 +220,12 @@ export function getComposers(movie: TmdbMovieDetail) {
   return movie.credits.crew.filter(
     (c) => c.job === "Original Music Composer" || c.job === "Music",
   );
+}
+
+export function getSimilarMovies(movie: TmdbMovieDetail, limit = 5) {
+  const recs = movie.recommendations?.results ?? [];
+  const pool = recs.length ? recs : (movie.similar?.results ?? []);
+  return pool.filter((m) => m.poster_path).slice(0, limit);
 }
 
 export function getTrailers(movie: TmdbMovieDetail) {

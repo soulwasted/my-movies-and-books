@@ -77,7 +77,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
         </head>
         <body
-          className={`${fontVariables} min-h-full flex flex-col bg-background antialiased`}
+          className={`${fontVariables} min-h-full flex flex-col overflow-x-clip bg-background antialiased`}
           suppressHydrationWarning
         >
           <ThemeProvider>

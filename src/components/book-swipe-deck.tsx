@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { BookOpen, EyeOff, Heart, Flag, Star, Undo2 } from "lucide-react";
+import { BookOpen, Flag, Heart, Star, ThumbsDown, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RatingDialog } from "@/components/rating-dialog";
@@ -62,6 +62,17 @@ export function BookSwipeDeck({ locale }: { locale: string }) {
     if (!current || !currentCard) return;
     commit(current, index, () =>
       saveBookAction({ googleVolumeId: current.id, status: "SKIPPED", skipRevalidate: true }),
+    );
+  };
+
+  const handleNotInterested = () => {
+    if (!current || !currentCard) return;
+    commit(current, index, () =>
+      saveBookAction({
+        googleVolumeId: current.id,
+        status: "NOT_INTERESTED",
+        skipRevalidate: true,
+      }),
     );
   };
 
@@ -137,34 +148,45 @@ export function BookSwipeDeck({ locale }: { locale: string }) {
       )}
 
       <div className="sticky bottom-20 z-10 mt-4 rounded-2xl border border-border/60 bg-background/95 p-3 shadow-lg backdrop-blur-sm">
+        {/* Tři rozhodnutí se signálem vkusu, stejný vzhled pro všechna. */}
         <div className="grid grid-cols-3 gap-2">
           <Button
             variant="outline"
             disabled={actionsDisabled}
-            className="h-auto flex-col gap-1 py-3 text-destructive hover:text-destructive"
-            onClick={handleSkip}
-          >
-            <EyeOff className="h-5 w-5" />
-            <span className="text-xs font-medium">{t("skip")}</span>
-          </Button>
-          <Button
-            disabled={actionsDisabled}
-            className="h-auto flex-col gap-1 bg-emerald-600 py-3 hover:bg-emerald-500"
+            className="h-auto flex-col gap-1 py-3"
             onClick={handleRead}
           >
-            <Star className="h-5 w-5 fill-current" />
+            <Star className="h-5 w-5" />
             <span className="text-xs font-medium">{t("read")}</span>
           </Button>
           <Button
             variant="outline"
             disabled={actionsDisabled}
-            className="h-auto flex-col gap-1 text-pink-400 hover:text-pink-300"
+            className="h-auto flex-col gap-1 py-3"
             onClick={handleWant}
           >
             <Heart className="h-5 w-5" />
             <span className="text-xs font-medium">{t("want")}</span>
           </Button>
+          <Button
+            variant="outline"
+            disabled={actionsDisabled}
+            className="h-auto flex-col gap-1 py-3"
+            onClick={handleNotInterested}
+          >
+            <ThumbsDown className="h-5 w-5" />
+            <span className="text-xs font-medium">{t("notInterested")}</span>
+          </Button>
         </div>
+        {/* Přeskočit je neutrální: nic se nenaučí, film zůstane v historii nabídky. */}
+        <button
+          type="button"
+          disabled={actionsDisabled}
+          onClick={handleSkip}
+          className="mt-2 w-full text-center text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+        >
+          {t("skip")}
+        </button>
       </div>
 
       <RatingDialog

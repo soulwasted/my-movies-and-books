@@ -19,6 +19,7 @@ type Item = {
 const STATUS_KEYS: Record<string, string> = {
   SEEN: "statusSeen",
   SKIPPED: "statusSkipped",
+  NOT_INTERESTED: "statusNotInterested",
   WANT: "statusWant",
   READ: "statusRead",
 };
