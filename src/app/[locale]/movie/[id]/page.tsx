@@ -34,7 +34,8 @@ import { prisma } from "@/lib/db";
 import { MovieActions } from "@/components/movie-actions";
 import { AiRecommendPanel } from "@/components/ai-recommend-panel";
 import { ReportMovieButton } from "@/components/report-movie-button";
-import { ExternalLink, Heart, Play } from "lucide-react";
+import { FavoritePersonHeart } from "@/components/favorite-person-button";
+import { ExternalLink, Play } from "lucide-react";
 
 export default async function MoviePage({
   params,
@@ -131,11 +132,13 @@ export default async function MoviePage({
     people.filter((p, i) => people.findIndex((x) => x.id === p.id) === i);
   const writers = uniqueById(getWriters(movie));
   const composers = uniqueById(getComposers(movie));
-  const personLink = (p: { id: number; name: string }) => ({
+  // Oblíbení se ukládá v profesi z tohoto filmu: režisér jako režie, i když jinde hraje.
+  const personLink = (department: string) => (p: { id: number; name: string; profile_path: string | null }) => ({
     key: p.id,
     name: p.name,
     href: `/${locale}/person/${p.id}`,
     favorite: favoriteIds.has(p.id),
+    person: { tmdbPersonId: p.id, name: p.name, profilePath: p.profile_path, department },
   });
   const tmdbTrailers = getTrailers(movie);
   const czdbTrailerList = czdb ? czdbTrailers(czdb) : [];
@@ -160,19 +163,19 @@ export default async function MoviePage({
     {
       label: t("director"),
       people: directors.length
-        ? directors.map(personLink)
+        ? directors.map(personLink("Directing"))
         : splitPeople(czdb?.rezie).map((name) => ({ key: name, name })),
     },
     {
       label: t("writer"),
       people: writers.length
-        ? writers.slice(0, 5).map(personLink)
+        ? writers.slice(0, 5).map(personLink("Writing"))
         : splitPeople(czdb?.scenar).map((name) => ({ key: name, name })),
     },
     {
       label: t("composer"),
       people: composers.length
-        ? composers.map(personLink)
+        ? composers.map(personLink("Sound"))
         : czdb?.hudba && czdb.hudba !== "N/A"
           ? splitPeople(czdb.hudba).map((name) => ({ key: name, name }))
           : [],
@@ -187,8 +190,9 @@ export default async function MoviePage({
         photo: profileUrl(c.profile_path),
         href: `/${locale}/person/${c.id}`,
         favorite: favoriteIds.has(c.id),
+        person: { tmdbPersonId: c.id, name: c.name, profilePath: c.profile_path, department: "Acting" },
       }))
-    : splitPeople(czdb?.herci).map((name) => ({ key: name, name, character: undefined, photo: null, href: null, favorite: false }));
+    : splitPeople(czdb?.herci).map((name) => ({ key: name, name, character: undefined, photo: null, href: null, favorite: false, person: null }));
 
   const trailers = [
     ...tmdbTrailers.map((tr) => ({ key: tr.key, name: tr.name, url: `https://www.youtube.com/watch?v=${tr.key}` })),
@@ -280,13 +284,17 @@ export default async function MoviePage({
                   {c.people.map((p, i) => (
                     <span key={p.key}>
                       {i > 0 && ", "}
-                      {"href" in p && p.href ? (
-                        <Link href={p.href} className="underline-offset-4 hover:underline">
-                          {p.name}
-                          {"favorite" in p && p.favorite && (
-                            <Heart className="ml-1 inline size-3 -translate-y-px fill-primary text-primary" />
-                          )}
-                        </Link>
+                      {"person" in p ? (
+                        <>
+                          <Link href={p.href} className="underline-offset-4 hover:underline">
+                            {p.name}
+                          </Link>
+                          <FavoritePersonHeart
+                            person={p.person}
+                            initialFavorite={p.favorite}
+                            className="ml-1 size-3.5 -translate-y-px align-middle"
+                          />
+                        </>
                       ) : (
                         p.name
                       )}
@@ -311,9 +319,7 @@ export default async function MoviePage({
               {cast.map((c) => {
                 const body = (
                   <>
-                    <div
-                      className={`relative mx-auto size-16 overflow-hidden rounded-full bg-muted ${c.favorite ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
-                    >
+                    <div className="relative mx-auto size-16 overflow-hidden rounded-full bg-muted">
                       {c.photo ? (
                         <Image src={c.photo} alt="" fill className="object-cover" />
                       ) : (
@@ -328,10 +334,17 @@ export default async function MoviePage({
                     )}
                   </>
                 );
-                return c.href ? (
-                  <Link key={c.key} href={c.href} className="w-20 shrink-0 snap-start text-center">
-                    {body}
-                  </Link>
+                return c.href && c.person ? (
+                  <div key={c.key} className="relative w-20 shrink-0 snap-start text-center">
+                    <Link href={c.href} className="block">
+                      {body}
+                    </Link>
+                    <FavoritePersonHeart
+                      person={c.person}
+                      initialFavorite={c.favorite}
+                      className="absolute left-[calc(50%+14px)] top-11 size-6 rounded-full bg-background p-1 shadow ring-1 ring-border"
+                    />
+                  </div>
                 ) : (
                   <div key={c.key} className="w-20 shrink-0 snap-start text-center">
                     {body}
