@@ -220,11 +220,13 @@ function CardSkeleton() {
 function ReasonChip({ reason }: { reason: QueueReason }) {
   const t = useTranslations("swipe");
   const text =
-    reason.type === "because"
-      ? t("reasonBecause", { title: reason.title })
-      : reason.type === "genres"
-        ? t("reasonGenres", { genres: reason.names.join(", ") })
-        : t("reasonExplore");
+    reason.type === "ai"
+      ? t("reasonAi", { text: reason.text })
+      : reason.type === "because"
+        ? t("reasonBecause", { title: reason.title })
+        : reason.type === "genres"
+          ? t("reasonGenres", { genres: reason.names.join(", ") })
+          : t("reasonExplore");
   return (
     <p className="flex items-center gap-1.5 text-xs text-primary">
       <Sparkles className="h-3.5 w-3.5 shrink-0" />

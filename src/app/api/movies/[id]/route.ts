@@ -8,6 +8,7 @@ import {
   normalizeCzdbFilm,
   type CzdbFilm,
 } from "@/lib/czdb";
+import { fetchCsfdRating } from "@/lib/csfd";
 import { buildMovieCardSummary } from "@/lib/movie-card";
 import { NextResponse } from "next/server";
 
@@ -65,7 +66,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     });
 
     if (czdbFilm) {
-      csfdRating = parseCzdbRating(czdbFilm.hodnoceni);
+      csfdRating =
+        (await fetchCsfdRating(czdbFilm.csfd_url)) ?? parseCzdbRating(czdbFilm.hodnoceni);
       csfdUrl = czdbFilm.csfd_url;
     } else {
       csfdRating = null;
@@ -104,7 +106,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   return NextResponse.json({
     movie: movieData,
-    card: buildMovieCardSummary(movieData, czdbFilm),
+    card: buildMovieCardSummary(movieData, czdbFilm, csfdRating),
     csfdRating,
     csfdUrl,
     czdb: czdbFilm,

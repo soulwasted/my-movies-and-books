@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   buildTasteModel,
+  mixInAiTips,
   decisionSignal,
   rankQueue,
   scoreCandidate,
@@ -105,5 +106,24 @@ describe("rankQueue", () => {
     const plain = scoreCandidate(model, candidate(1, { genreIds: [DRAMA] }));
     const recommended = scoreCandidate(model, candidate(2, { genreIds: [DRAMA], recommendedBecause: "Příchozí" }));
     expect(recommended.score).toBeGreaterThan(plain.score);
+  });
+});
+
+describe("mixInAiTips (ISC-21)", () => {
+  const queue = Array.from({ length: 20 }, (_, i) => ({ id: i + 1 }));
+  const tips = [{ id: 101 }, { id: 102 }, { id: 103 }, { id: 104 }, { id: 3 }];
+
+  test("max 3 tipy, nejvýš jeden v prvních pěti, délka fronty zachována", () => {
+    const out = mixInAiTips(queue, tips, { max: 3 });
+    const tipIds = new Set([101, 102, 103, 104]);
+    expect(out).toHaveLength(20);
+    expect(out.filter((q) => tipIds.has(q.id))).toHaveLength(3);
+    expect(out.slice(0, 5).filter((q) => tipIds.has(q.id))).toHaveLength(1);
+  });
+
+  test("tip, který už ve frontě je, se nezdvojí", () => {
+    const out = mixInAiTips(queue, [{ id: 3 }], { max: 3 });
+    expect(out.filter((q) => q.id === 3)).toHaveLength(1);
+    expect(out).toEqual(queue);
   });
 });

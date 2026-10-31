@@ -55,6 +55,8 @@ function mergePeople(...lists: string[][]): string[] {
 export function buildMovieCardSummary(
   movie: TmdbMovieDetail,
   czdb: CzdbFilm | null,
+  /** Živé hodnocení z ČSFD; bez něj zůstává snímek z CZDB. */
+  csfdRating?: number | null,
 ): MovieCardSummary {
   const czdbTrusted =
     czdb &&
@@ -97,7 +99,7 @@ export function buildMovieCardSummary(
     year: movie.release_date?.slice(0, 4) ?? (trustedCzdb?.rok ? String(trustedCzdb.rok) : null),
     runtime: movie.runtime ?? null,
     voteAverage: movie.vote_average,
-    csfdRating: trustedCzdb ? parseCzdbRating(trustedCzdb.hodnoceni) : null,
+    csfdRating: trustedCzdb ? (csfdRating ?? parseCzdbRating(trustedCzdb.hodnoceni)) : null,
     // TMDB vrací názvy žánrů v jazyce dotazu (cs-CZ), CZDB jako záloha.
     genres: movie.genres?.length
       ? movie.genres.map((g) => g.name)

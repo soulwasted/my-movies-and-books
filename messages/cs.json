@@ -52,7 +52,8 @@
     "notInterested": "Nezajímá mě",
     "reasonBecause": "Podobné jako {title}",
     "reasonGenres": "Sedí tvému vkusu: {genres}",
-    "reasonExplore": "Objevování mimo tvou bublinu"
+    "reasonExplore": "Objevování mimo tvou bublinu",
+    "reasonAi": "AI tip: {text}"
   },
   "bookSwipe": {
     "read": "Přečteno",

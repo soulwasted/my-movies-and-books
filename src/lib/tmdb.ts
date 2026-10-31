@@ -12,6 +12,7 @@ export type TmdbMovieListItem = {
   vote_average: number;
   genre_ids: number[];
   original_language?: string;
+  popularity?: number;
   runtime?: number;
 };
 
@@ -176,9 +177,9 @@ export async function getTrending(page = 1) {
   });
 }
 
-export async function searchMovies(query: string, year?: number) {
+export async function searchMovies(query: string, year?: number, language = "cs-CZ") {
   const params: Record<string, string> = {
-    language: "cs-CZ",
+    language,
     query,
   };
   if (year) params.primary_release_year = String(year);

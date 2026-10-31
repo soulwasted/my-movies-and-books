@@ -11,8 +11,10 @@ import {
   type TmdbMovieListItem,
 } from "@/lib/tmdb";
 import { normalizeToScale } from "@/lib/rating";
+import { getTasteProfile } from "@/lib/taste-profile";
 import {
   buildTasteModel,
+  mixInAiTips,
   rankQueue,
   type CandidateFeatures,
   type DecisionFeatures,
@@ -58,12 +60,13 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [prefs, existing] = await Promise.all([
+  const [prefs, existing, profile] = await Promise.all([
     prisma.userPreferences.findUnique({ where: { userId } }),
     prisma.userMovie.findMany({
       where: { userId },
       select: { tmdbId: true, status: true, rating: true, ratingType: true, updatedAt: true },
     }),
+    getTasteProfile(userId).catch(() => null),
   ]);
   // Každý film, který už fronta ukázala (i přeskočený), je venku: návrat přeskočených zatím není.
   const exclude = new Set(existing.map((e) => e.tmdbId));
@@ -166,5 +169,22 @@ export async function GET() {
     return { ...c.movie, reason };
   });
 
-  return NextResponse.json({ movies, modelDecisions: model.decisionCount });
+  // AI tipy z profilu, který Claude počítá na pozadí; tady se jen čtou z DB.
+  const aiTips: QueueMovie[] = (profile?.picks ?? [])
+    .filter((p) => !exclude.has(p.tmdbId))
+    .map((p) => ({
+      id: p.tmdbId,
+      title: p.title,
+      original_title: p.title,
+      overview: "",
+      poster_path: null,
+      backdrop_path: null,
+      release_date: String(p.year),
+      vote_average: 0,
+      genre_ids: [],
+      reason: { type: "ai", text: p.reason },
+    }));
+  const mixed = mixInAiTips(movies, pickRandom(aiTips, aiTips.length), { max: 3 });
+
+  return NextResponse.json({ movies: mixed, modelDecisions: model.decisionCount });
 }

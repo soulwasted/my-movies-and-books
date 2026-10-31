@@ -179,3 +179,25 @@ export function rankQueue<C extends CandidateFeatures>(
   });
   return out.slice(0, options.size);
 }
+
+/**
+ * Přimíchá AI tipy do seřazené fronty: nejvýš `max` tipů, nejvýš jeden mezi
+ * prvními pěti kartami, bez duplicit. Tipy nahrazují karty od konce fronty.
+ */
+export function mixInAiTips<T extends { id: number }>(
+  queue: T[],
+  tips: T[],
+  options: { max: number; firstSlot?: number; spacing?: number },
+): T[] {
+  const queueIds = new Set(queue.map((q) => q.id));
+  const usable = tips.filter((t) => !queueIds.has(t.id)).slice(0, options.max);
+  if (usable.length === 0) return queue;
+
+  const out = queue.slice(0, Math.max(0, queue.length - usable.length));
+  const firstSlot = options.firstSlot ?? 2;
+  const spacing = options.spacing ?? 6;
+  usable.forEach((tip, i) => {
+    out.splice(Math.min(out.length, firstSlot + i * spacing), 0, tip);
+  });
+  return out;
+}

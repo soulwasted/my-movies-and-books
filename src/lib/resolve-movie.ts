@@ -1,17 +1,31 @@
 import { searchMovies, type TmdbMovieListItem } from "@/lib/tmdb";
 
-function pickBestMatch(
+/**
+ * Vybere film, jehož název (anglický nebo originální) přesně odpovídá dotazu
+ * (bez diakritiky a členu); mezi shodami s rokem ±1 vyhrává popularita. Bez shody názvu nic —
+ * dřív se bral první výsledek a AI tip „Mother“ skončil jako jiný film.
+ */
+export function pickBestMatch(
   results: TmdbMovieListItem[],
   year: number,
+  query: string,
 ): TmdbMovieListItem | null {
-  if (results.length === 0) return null;
-  const byYear = results.find((r) => r.release_date?.startsWith(String(year)));
-  if (byYear) return byYear;
-  const nearYear = results.find((r) => {
-    const y = parseInt(r.release_date?.slice(0, 4) ?? "0", 10);
-    return y && Math.abs(y - year) <= 1;
-  });
-  return nearYear ?? results[0];
+  const key = (t: string) => normalizeTitle(t.replace(/^(the|a|an)\s+/i, ""));
+  const q = key(query);
+  if (!q) return null;
+  const matches = results
+    .filter((r) => [r.title, r.original_title].some((t) => key(t ?? "") === q))
+    .map((r) => {
+      const y = parseInt(r.release_date?.slice(0, 4) ?? "", 10);
+      return { r, diff: Number.isFinite(y) ? Math.abs(y - year) : 99 };
+    })
+    .filter((m) => m.diff <= 2)
+    // Rok ±1 je jedna skupina (festival vs. kino); v ní vyhrává popularita.
+    .sort(
+      (a, b) =>
+        Number(a.diff > 1) - Number(b.diff > 1) || (b.r.popularity ?? 0) - (a.r.popularity ?? 0),
+    );
+  return matches[0]?.r ?? null;
 }
 
 function cleanTitle(title: string, year: number): string {
@@ -29,23 +43,17 @@ export async function resolveMovieTmdbId(
     (q, i, arr) => q && arr.indexOf(q) === i,
   );
 
-  for (const query of queries) {
-    try {
-      const data = await searchMovies(query, year);
-      const match = pickBestMatch(data.results, year);
-      if (match) return match.id;
-    } catch {
-      /* try next query */
-    }
-  }
-
-  for (const query of queries) {
-    try {
-      const data = await searchMovies(query);
-      const match = pickBestMatch(data.results, year);
-      if (match) return match.id;
-    } catch {
-      /* try next query */
+  // AI vrací anglické / mezinárodní názvy → hledat v en-US, nejdřív bez filtru roku
+  // (TMDB primary_release_year se u festivalových filmů liší od „známého“ roku).
+  for (const yearFilter of [undefined, year]) {
+    for (const query of queries) {
+      try {
+        const data = await searchMovies(query, yearFilter, "en-US");
+        const match = pickBestMatch(data.results, year, query);
+        if (match) return match.id;
+      } catch {
+        /* zkusit další dotaz */
+      }
     }
   }
 

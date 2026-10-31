@@ -4,6 +4,7 @@ import type { TmdbMovieListItem } from "@/lib/tmdb";
 export type QueueReason =
   | { type: "because"; title: string }
   | { type: "genres"; names: string[] }
-  | { type: "explore" };
+  | { type: "explore" }
+  | { type: "ai"; text: string };
 
 export type QueueMovie = TmdbMovieListItem & { reason?: QueueReason };

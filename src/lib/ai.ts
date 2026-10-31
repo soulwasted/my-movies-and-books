@@ -13,6 +13,8 @@ export type UserTasteProfile = {
   wantList: string[];
   /** Tituly označené „nechci vidět/číst“: negativní signál vkusu. */
   notInterested: string[];
+  /** Shrnutí vkusu z AI profilu počítaného na pozadí (pokud už existuje). */
+  tasteSummary?: string;
   excludedTitles: Array<{ title: string; year: number }>;
   excludedTmdbIds: number[];
   favoriteGenres: string[];
@@ -69,7 +71,13 @@ function profileBlock(profile: UserTasteProfile): string {
       .map((m) => `${m.title} (${m.year})`)
       .join(", ") || (profile.locale === "cs" ? "žádné" : "none");
 
-  return profile.locale === "cs"
+  const summary = profile.tasteSummary
+    ? profile.locale === "cs"
+      ? `Profil vkusu (z celé historie): ${profile.tasteSummary}\n`
+      : `Taste profile (from full history): ${profile.tasteSummary}\n`
+    : "";
+
+  return summary + (profile.locale === "cs"
     ? `Oblíbené žánry: ${profile.favoriteGenres.join(", ") || "neuvedeno"}
 Viděl (nedávno): ${profile.watched.slice(0, 15).map((w) => w.title).join(", ") || "nic"}
 Chce vidět: ${profile.wantList.slice(0, 15).join(", ") || "prázdný"}
@@ -83,7 +91,7 @@ Want to watch: ${profile.wantList.slice(0, 15).join(", ") || "empty"}
 Not interested (avoid similar): ${profile.notInterested.slice(0, 15).join(", ") || "none"}
 
 FORBIDDEN titles — already watched or on wishlist, NEVER recommend:
-${excludedList}`;
+${excludedList}`);
 }
 
 async function callStructured(

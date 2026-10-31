@@ -5,6 +5,8 @@ import { prisma } from "@/lib/db";
 import { normalizeToScale } from "@/lib/rating";
 import { MovieStatus, BookStatus, RatingType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { refreshTasteProfileIfDue } from "@/lib/taste-profile";
 
 export async function saveMovieAction(input: {
   tmdbId: number;
@@ -37,6 +39,9 @@ export async function saveMovieAction(input: {
     create: { userId, tmdbId: input.tmdbId, ...data },
     update: data,
   });
+
+  // AI profil vkusu se přepočítá po odeslání odpovědi, swipe na Claude nečeká.
+  after(() => refreshTasteProfileIfDue(userId));
 
   if (input.skipRevalidate) return;
   revalidatePath("/");

@@ -19,6 +19,7 @@ import {
 } from "@/lib/google-books";
 import { normalizeToScale } from "@/lib/rating";
 import { sanitizeHistory } from "@/lib/ai-model";
+import { getTasteProfile } from "@/lib/taste-profile";
 import { NextResponse } from "next/server";
 
 export const maxDuration = 60;
@@ -88,15 +89,17 @@ async function buildMovieProfile(userId: string, locale: "cs" | "en"): Promise<U
     );
   }
 
-  const skippedCount = await prisma.userMovie.count({
-    where: { userId, status: "SKIPPED" },
-  });
+  const [skippedCount, tasteProfile] = await Promise.all([
+    prisma.userMovie.count({ where: { userId, status: "SKIPPED" } }),
+    getTasteProfile(userId).catch(() => null),
+  ]);
 
   return {
     locale,
     watched,
     wantList,
     notInterested,
+    tasteSummary: tasteProfile?.summary,
     excludedTitles,
     excludedTmdbIds,
     favoriteGenres,

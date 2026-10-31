@@ -3,7 +3,7 @@ task: "Media Diary — chytré nabízení filmů a knih, které se učí z rozho
 slug: media-diary
 project: Media Diary
 phase: climbing
-progress: 28/34
+progress: 34/35
 started: 2026-06-07T00:00:00Z
 updated: 2026-10-31T20:00:00Z
 principal_stated_goal: "Musí to být chytré nabízení filmů či knih. Jakoby AI na pozadí."
@@ -125,11 +125,12 @@ Why: aby každé rozhodnutí okamžitě změnilo, co uvidím příště — levn
 
 ### F3 · AI profil na pozadí
 Why: najít to, co čísla nenajdou — souvislosti, nálady, autorský styl — a říct proč.
-- [ ] ISC-20: Po každých 20 rozhodnutích (spuštěno přes `after()` po server action, bez cronu) Claude přepočítá AI profil (text vkusu + 10 konkrétních titulů s důvodem) a uloží ho do DB.
-- [ ] ISC-21: AI tipy se přimíchají do fronty se štítkem „AI tip“ a jednovětým důvodem — max 3 z 20 karet, nejvýš jeden v prvních pěti.
-- [ ] ISC-22: Přepočet běží mimo swipe; swipe zůstává < 200 ms i během něj.
-- [ ] ISC-23: AI tipy jsou filtrované proti WATCHED/WANT/NOT_INTERESTED (stejně jako chat).
-- [ ] ISC-24: AI chat a „Doporuč mi“ používají uložený AI profil místo skládání profilu za běhu.
+- [x] ISC-20: Po každých 20 rozhodnutích (spuštěno přes `after()` po server action, bez cronu) Claude přepočítá AI profil (text vkusu + 10 konkrétních titulů s důvodem) a uloží ho do DB.
+- [x] ISC-21: AI tipy se přimíchají do fronty se štítkem „AI tip“ a jednovětým důvodem — max 3 z 20 karet, nejvýš jeden v prvních pěti.
+- [x] ISC-22: Přepočet běží mimo swipe; swipe zůstává < 200 ms i během něj.
+- [x] ISC-23: AI tipy jsou filtrované proti WATCHED/WANT/NOT_INTERESTED (stejně jako chat).
+- [x] ISC-24: AI chat a „Doporuč mi“ dostávají uložené shrnutí AI profilu v system promptu (vedle profilu skládaného za běhu).
+- [x] ISC-23.1: Tipy AI se dohledávají v TMDB přesnou shodou anglického/originálního názvu a rokem ±1; bez shody se tip zahodí.
 
 ### F4 · Historie nabídky
 Why: nic, co mi fronta ukázala, se neztratí — můžu se vrátit a rozhodnout znovu.
@@ -150,6 +151,8 @@ Why: nic, co mi fronta ukázala, se neztratí — můžu se vrátit a rozhodnout
 - 2026-10-31 — refined: ISC-14 bez režisérů a herců — seznamové položky TMDB je nemají a dotahovat detaily ke 100+ kandidátům by rozbilo ISC-19. Lidi zůstávají pro „Proč tenhle film?“ jako budoucí rozšíření.
 - 2026-10-31 — Rysy rozhodnutých filmů se čtou z `MovieCache` přes `data::jsonb` přímo v Postgresu, ne parsováním celých JSONů v Node.
 - 2026-10-31 — F4 postavena na existující záložce Historie v Knihovně (ne nová stránka): filtr podle stavu + tři ikony rozhodnutí na kartě. Knihy zatím bez inline rozhodnutí (Google Books mrtvé).
+- 2026-10-31 — refined: ISC-24 — chat profil doplňuje, nenahrazuje; dynamický profil (seznamy, zakázané tituly) dál chrání před doporučením viděného.
+- 2026-10-31 — AI profil: `claude-sonnet-5-5`, effort `medium` (běží na pozadí, kvalita před rychlostí), první profil od 10 rozhodnutí, pak každých 20; ochrana proti souběhu per instance.
 - 2026-10-31 — Dvouvrstvá architektura doporučování: deterministický model vkusu (rychlý, každé načtení) + AI profil (pomalý, na pozadí). LLM per karta zamítnuto kvůli odezvě a ceně.
 
 ## Learning
@@ -158,10 +161,12 @@ Why: nic, co mi fronta ukázala, se neztratí — můžu se vrátit a rozhodnout
 - conjectured: Problikávání karty je animace. refuted by: kód — fronta se načítala znovu při změně identity `t()` a první film se mezitím zapsal jako SEEN, takže druhá fronta ho vyřadila. learned: efekty závislé na referencích z providerů jsou křehké. criterion now: ISC-1.
 - conjectured: TMDB recommendations k oblíbeným filmům dají pestrou frontu. refuted by: první běh — 7 z 20 karet z doporučení ke Spider-Manovi (Marvel lavina). learned: recommendations jedné franšízy mají vysoké skóre všechny naráz a model je sám nerozředí. criterion now: ISC-17.1.
 - conjectured: Knihovnu stačí zrychlit sloučením 213 requestů do jednoho. refuted by: jediný `/api/movies/meta` trval 4,8 s — přenášel celé detaily filmů (megabajty JSONu) z Neonu v us-east. learned: u vzdálené DB rozhoduje objem dat, ne jen počet dotazů. criterion now: ISC-29.1 (pole extrahovaná v SQL, 0,9 s).
+- conjectured: `resolveMovieTmdbId` spolehlivě přiřadí AI tip k filmu. refuted by: první AI profil — „Mother (2009)“ → *Mother and Child*, „A Prophet“ → dokument o kapele; hledání s filtrem roku + první výsledek bez kontroly názvu, navíc v cs-CZ, kde názvy neodpovídají anglickým. learned: shoda musí být přes název (en + originál), rok jen jako tolerance ±1, popularita rozhoduje mezi jmenovci. criterion now: ISC-23.1 (`resolve-movie.test.ts`).
 
 ## Verification
 
 - ISC-12, ISC-14, ISC-15, ISC-16, ISC-17.1: `bun test src/lib/taste-model.test.ts` (10 pass).
+- ISC-20..ISC-24, ISC-23.1: `bun test` 18 pass; profil spočten za 13–15 s (druhé volání bez přepočtu), 8/10 tipů dohledáno správně, ve frontě AI tipy na pozicích 3/9/15, chat cituje profil, fronta teplá 0,7–1,2 s.
 - ISC-27, ISC-28: `rg` — žádné AI importy ani mazání v `src/app/api/movies` a modelu.
 - ISC-10, ISC-11, ISC-13, ISC-29..ISC-32: prohlížeč 2026-10-31 — 3 tlačítka + Přeskočit, `NOT_INTERESTED` uložen v DB a vrácen, filtr historie, meta 891 ms, migrate diff prázdný.
 - ISC-17, ISC-19, ISC-25, ISC-26: prohlížeč 2026-10-31 — fronta 1138 ms studená / 693 ms teplá, 86 rozhodnutí v modelu, důvody na kartě, zdroje ≤ 4.
@@ -172,4 +177,5 @@ Why: nic, co mi fronta ukázala, se neztratí — můžu se vrátit a rozhodnout
 
 - [ ] Vercel env: Clerk klíče z `awaited-lemming-75` — jinak produkce nenajde převedeného uživatele.
 - [ ] Google Books API klíč vrací 403 (Books API zablokované na klíči) — opravit v Google Cloud; do té doby knihy mrtvé.
-- [ ] Commit F1, F2, F4 (žánry, 3 rozhodnutí, model vkusu, historie) — čeká na pepův souhlas.
+- [ ] Commit F3 (AI profil, AI tipy, oprava dohledávání) — F1, F2, F4 jsou v 687a2bb.
+- [ ] Push na GitHub + Vercel deploy — až budou na Vercelu nové Clerk klíče.

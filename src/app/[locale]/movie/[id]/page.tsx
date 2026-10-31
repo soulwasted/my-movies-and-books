@@ -29,6 +29,7 @@ import {
   normalizeCzdbFilm,
   type CzdbFilm,
 } from "@/lib/czdb";
+import { fetchCsfdRating } from "@/lib/csfd";
 import { prisma } from "@/lib/db";
 import { MovieActions } from "@/components/movie-actions";
 import { AiRecommendPanel } from "@/components/ai-recommend-panel";
@@ -69,6 +70,8 @@ export default async function MoviePage({
     !cached?.csfdUpdated ||
     Date.now() - cached.csfdUpdated.getTime() > 7 * 24 * 60 * 60 * 1000;
 
+  let freshCsfdRating = cached?.csfdRating ?? null;
+
   if (!czdb || stale) {
     const rejectedIds: number[] = cached?.rejectedCzdbIds
       ? JSON.parse(cached.rejectedCzdbIds)
@@ -84,19 +87,21 @@ export default async function MoviePage({
       rejectedIds,
     });
     if (czdb) {
+      freshCsfdRating =
+        (await fetchCsfdRating(czdb.csfd_url)) ?? parseCzdbRating(czdb.hodnoceni);
       await prisma.movieCache.upsert({
         where: { tmdbId },
         create: {
           tmdbId,
           data: JSON.stringify(movie),
-          csfdRating: parseCzdbRating(czdb.hodnoceni),
+          csfdRating: freshCsfdRating,
           csfdUrl: czdb.csfd_url,
           czdbId: czdb.id,
           czdbData: JSON.stringify(czdb),
           csfdUpdated: new Date(),
         },
         update: {
-          csfdRating: parseCzdbRating(czdb.hodnoceni),
+          csfdRating: freshCsfdRating,
           csfdUrl: czdb.csfd_url,
           czdbId: czdb.id,
           czdbData: JSON.stringify(czdb),
@@ -106,7 +111,8 @@ export default async function MoviePage({
     }
   }
 
-  const csfdRating = czdb ? parseCzdbRating(czdb.hodnoceni) : cached?.csfdRating;
+  // Cache drží živé číslo z ČSFD; snímek z CZDB jen když ještě nic nemáme.
+  const csfdRating = czdb ? (freshCsfdRating ?? parseCzdbRating(czdb.hodnoceni)) : cached?.csfdRating;
   const csfdUrl = czdb?.csfd_url ?? cached?.csfdUrl;
 
   const userMovie = await prisma.userMovie.findUnique({

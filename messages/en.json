@@ -52,7 +52,8 @@
     "notInterested": "Not for me",
     "reasonBecause": "Similar to {title}",
     "reasonGenres": "Matches your taste: {genres}",
-    "reasonExplore": "Exploring outside your bubble"
+    "reasonExplore": "Exploring outside your bubble",
+    "reasonAi": "AI pick: {text}"
   },
   "bookSwipe": {
     "read": "Read",
