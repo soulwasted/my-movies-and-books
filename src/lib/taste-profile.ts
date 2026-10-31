@@ -94,11 +94,14 @@ export async function refreshTasteProfileIfDue(userId: string): Promise<boolean>
 export async function computeTasteProfile(userId: string, decisionCount: number) {
   if (!client) throw new Error("ANTHROPIC_API_KEY not configured");
 
-  const rows = await prisma.userMovie.findMany({
-    where: { userId },
-    select: { tmdbId: true, status: true, rating: true, ratingType: true, updatedAt: true },
-    orderBy: { updatedAt: "desc" },
-  });
+  const [rows, people] = await Promise.all([
+    prisma.userMovie.findMany({
+      where: { userId },
+      select: { tmdbId: true, status: true, rating: true, ratingType: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" },
+    }),
+    prisma.favoritePerson.findMany({ where: { userId }, select: { name: true, department: true } }),
+  ]);
   const decided = rows.filter((r) => (DECISION_STATUSES as readonly string[]).includes(r.status));
 
   const titles = await prisma.$queryRaw<Array<{ tmdbId: number; title: string | null; year: string | null }>>`
@@ -126,6 +129,9 @@ ${listOf("WANT").map((t) => `- ${t}`).join("\n") || "- nic"}
 
 Nezajímá ho:
 ${listOf("NOT_INTERESTED").map((t) => `- ${t}`).join("\n") || "- nic"}
+
+Oblíbení tvůrci (herci, režiséři, scenáristé, skladatelé):
+${people.map((p) => `- ${p.name} (${p.department})`).join("\n") || "- nikdo"}
 
 Napiš profil jeho filmového vkusu a navrhni ${PICK_COUNT} konkrétních filmů, které ještě nezná.
 Žádný z navržených filmů nesmí být v seznamech výše. Upřednostni méně známé tituly, které by

@@ -224,7 +224,9 @@ function ReasonChip({ reason }: { reason: QueueReason }) {
       ? t("reasonAi", { text: reason.text })
       : reason.type === "because"
         ? t("reasonBecause", { title: reason.title })
-        : reason.type === "genres"
+        : reason.type === "person"
+          ? t("reasonPerson", { name: reason.name })
+          : reason.type === "genres"
           ? t("reasonGenres", { genres: reason.names.join(", ") })
           : t("reasonExplore");
   return (

@@ -5,6 +5,9 @@ import { routing } from "@/i18n/routing";
 const intlMiddleware = createMiddleware(routing);
 
 const isPublicRoute = createRouteMatcher([
+  // Clerk při vypršelé session přesměruje na /sign-in bez jazyka; bez výjimky to je smyčka.
+  "/sign-in(.*)",
+  "/sign-up(.*)",
   "/(cs|en)/sign-in(.*)",
   "/(cs|en)/sign-up(.*)",
   "/(cs|en)/login(.*)",

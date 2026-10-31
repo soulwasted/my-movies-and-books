@@ -4,6 +4,8 @@ import {
   discoverMovies,
   getGenres,
   getMovieRecommendations,
+  getPersonDetails,
+  getPersonCraftFilms,
   getTopRated,
   getTrending,
   isTmdbConfigured,
@@ -27,8 +29,21 @@ const QUEUE_SIZE = 20;
 const EXPLORE_SHARE = 0.15;
 /** Kolik oblíbených filmů použít jako zdroj TMDB doporučení. */
 const SEED_COUNT = 4;
+/** Kolik oblíbených tvůrců na jednu frontu a kolik jejich filmů z každého. */
+const PERSON_SEED_COUNT = 2;
+const FILMS_PER_PERSON = 15;
 
-type Candidate = CandidateFeatures & { movie: TmdbMovieListItem };
+type Candidate = CandidateFeatures & { movie: TmdbMovieListItem; byPerson?: string };
+
+async function personFilms(person: { tmdbPersonId: number; department: string }) {
+  const details = await getPersonDetails(person.tmdbPersonId);
+  const films: TmdbMovieListItem[] = getPersonCraftFilms(details, person.department);
+  // Bez obskurních položek (dokumenty o natáčení, cameo v TV speciálech).
+  return films
+    .filter((f) => f.poster_path && (f.vote_count ?? 0) >= 50)
+    .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))
+    .slice(0, FILMS_PER_PERSON);
+}
 
 function pickRandom<T>(items: T[], count: number): T[] {
   const copy = [...items];
@@ -60,13 +75,14 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [prefs, existing, profile] = await Promise.all([
+  const [prefs, existing, profile, favoritePeople] = await Promise.all([
     prisma.userPreferences.findUnique({ where: { userId } }),
     prisma.userMovie.findMany({
       where: { userId },
       select: { tmdbId: true, status: true, rating: true, ratingType: true, updatedAt: true },
     }),
     getTasteProfile(userId).catch(() => null),
+    prisma.favoritePerson.findMany({ where: { userId }, select: { tmdbPersonId: true, name: true, department: true } }),
   ]);
   // Každý film, který už fronta ukázala (i přeskočený), je venku: návrat přeskočených zatím není.
   const exclude = new Set(existing.map((e) => e.tmdbId));
@@ -122,7 +138,13 @@ export async function GET() {
   const page = () => Math.floor(Math.random() * 3) + 1;
 
   const settle = <T,>(p: Promise<T>) => p.catch(() => null);
-  const [seedResults, byGenre, topRated, trending, genreList] = await Promise.all([
+  const [personResults, seedResults, byGenre, topRated, trending, genreList] = await Promise.all([
+    Promise.all(
+      pickRandom(favoritePeople, PERSON_SEED_COUNT).map(async (p) => ({
+        name: p.name,
+        results: (await settle(personFilms(p))) ?? [],
+      })),
+    ),
     Promise.all(
       seeds.map(async (s) => ({
         title: featureById.get(s.tmdbId)?.title ?? null,
@@ -136,6 +158,12 @@ export async function GET() {
   ]);
 
   const candidates: Candidate[] = [];
+  // Tvůrci první: jejich důvod je konkrétnější než „podobné jako“.
+  for (const person of personResults) {
+    for (const m of person.results) {
+      candidates.push({ ...toCandidate(m, `person:${person.name}`), byPerson: person.name });
+    }
+  }
   for (const seed of seedResults) {
     for (const m of seed.results) candidates.push(toCandidate(m, seed.title ?? undefined));
   }
@@ -161,6 +189,7 @@ export async function GET() {
   const movies: QueueMovie[] = ranked.map((c) => {
     let reason: QueueReason | undefined;
     if (c.explore) reason = { type: "explore" };
+    else if (c.byPerson) reason = { type: "person", name: c.byPerson };
     else if (c.recommendedBecause) reason = { type: "because", title: c.recommendedBecause };
     else if (c.topGenreIds.length) {
       const names = c.topGenreIds.map((id) => genreName.get(id)).filter((n): n is string => !!n);

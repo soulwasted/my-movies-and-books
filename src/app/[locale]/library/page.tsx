@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { LibraryGrid } from "@/components/library-grid";
 import { BookLibraryGrid } from "@/components/book-library-grid";
+import { FavoritePeopleGrid } from "@/components/favorite-people-grid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default async function LibraryPage({
@@ -19,7 +20,7 @@ export default async function LibraryPage({
 
   const t = await getTranslations("library");
 
-  const [userMovies, userBooks] = await Promise.all([
+  const [userMovies, userBooks, people] = await Promise.all([
     prisma.userMovie.findMany({
       where: { userId },
       orderBy: { updatedAt: "desc" },
@@ -27,6 +28,10 @@ export default async function LibraryPage({
     prisma.userBook.findMany({
       where: { userId },
       orderBy: { updatedAt: "desc" },
+    }),
+    prisma.favoritePerson.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
     }),
   ]);
 
@@ -43,9 +48,12 @@ export default async function LibraryPage({
       <h1 className="text-2xl font-bold">{t("all")}</h1>
 
       <Tabs defaultValue="movies" className="mt-4">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="movies">{t("movies")}</TabsTrigger>
           <TabsTrigger value="books">{t("books")}</TabsTrigger>
+          <TabsTrigger value="people">
+            {t("people")} ({people.length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="movies" className="mt-4">
@@ -126,6 +134,17 @@ export default async function LibraryPage({
               )}
             </TabsContent>
           </Tabs>
+        </TabsContent>
+
+        <TabsContent value="people" className="mt-4">
+          {people.length === 0 ? (
+            <p className="text-muted-foreground">{t("peopleEmpty")}</p>
+          ) : (
+            <>
+              <p className="mb-6 text-sm text-muted-foreground">{t("peopleHint")}</p>
+              <FavoritePeopleGrid people={people} locale={locale} />
+            </>
+          )}
         </TabsContent>
       </Tabs>
     </main>

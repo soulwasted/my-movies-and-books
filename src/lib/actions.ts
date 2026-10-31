@@ -311,3 +311,32 @@ export async function reportBookDataAction(input: {
 
   return { ok: true };
 }
+
+/** Přidá nebo odebere tvůrce z oblíbených. Vrací nový stav. */
+export async function toggleFavoritePersonAction(input: {
+  tmdbPersonId: number;
+  name: string;
+  profilePath: string | null;
+  department: string;
+}): Promise<boolean> {
+  const userId = await requireUserId();
+  const key = { userId_tmdbPersonId: { userId, tmdbPersonId: input.tmdbPersonId } };
+
+  const existing = await prisma.favoritePerson.findUnique({ where: key, select: { id: true } });
+  if (existing) {
+    await prisma.favoritePerson.delete({ where: key });
+  } else {
+    await prisma.favoritePerson.create({
+      data: {
+        userId,
+        tmdbPersonId: input.tmdbPersonId,
+        name: input.name,
+        profilePath: input.profilePath,
+        department: input.department || "Acting",
+      },
+    });
+  }
+
+  revalidatePath("/library");
+  return !existing;
+}

@@ -13,6 +13,7 @@ export type TmdbMovieListItem = {
   genre_ids: number[];
   original_language?: string;
   popularity?: number;
+  vote_count?: number;
   runtime?: number;
 };
 
@@ -227,6 +228,22 @@ export function getSimilarMovies(movie: TmdbMovieDetail, limit = 5) {
   const recs = movie.recommendations?.results ?? [];
   const pool = recs.length ? recs : (movie.similar?.results ?? []);
   return pool.filter((m) => m.poster_path).slice(0, limit);
+}
+
+/** Profese, ve které je člověk známý, rozhoduje, které jeho filmy jsou „jeho“. */
+const JOBS_BY_DEPARTMENT: Record<string, string[]> = {
+  Directing: ["Director"],
+  Writing: ["Screenplay", "Writer", "Story", "Novel"],
+  Sound: ["Original Music Composer", "Music"],
+};
+
+/** Filmy, kde člověk pracoval ve své profesi (bez cameí, produkce a dokumentů o sobě). */
+export function getPersonCraftFilms(person: TmdbPerson, department = person.known_for_department) {
+  if (department === "Acting") {
+    return (person.movie_credits?.cast ?? []).filter((c) => c.character && !/\b(self|himself|herself)\b/i.test(c.character));
+  }
+  const jobs = JOBS_BY_DEPARTMENT[department];
+  return (person.movie_credits?.crew ?? []).filter((c) => !jobs || jobs.includes(c.job));
 }
 
 export function getTrailers(movie: TmdbMovieDetail) {

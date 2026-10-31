@@ -89,9 +89,10 @@ async function buildMovieProfile(userId: string, locale: "cs" | "en"): Promise<U
     );
   }
 
-  const [skippedCount, tasteProfile] = await Promise.all([
+  const [skippedCount, tasteProfile, people] = await Promise.all([
     prisma.userMovie.count({ where: { userId, status: "SKIPPED" } }),
     getTasteProfile(userId).catch(() => null),
+    prisma.favoritePerson.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 30 }),
   ]);
 
   return {
@@ -100,6 +101,7 @@ async function buildMovieProfile(userId: string, locale: "cs" | "en"): Promise<U
     wantList,
     notInterested,
     tasteSummary: tasteProfile?.summary,
+    favoritePeople: people.map((p) => `${p.name} (${p.department})`),
     excludedTitles,
     excludedTmdbIds,
     favoriteGenres,

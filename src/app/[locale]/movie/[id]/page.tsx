@@ -34,7 +34,7 @@ import { prisma } from "@/lib/db";
 import { MovieActions } from "@/components/movie-actions";
 import { AiRecommendPanel } from "@/components/ai-recommend-panel";
 import { ReportMovieButton } from "@/components/report-movie-button";
-import { ExternalLink, Play } from "lucide-react";
+import { ExternalLink, Heart, Play } from "lucide-react";
 
 export default async function MoviePage({
   params,
@@ -115,15 +115,28 @@ export default async function MoviePage({
   const csfdRating = czdb ? (freshCsfdRating ?? parseCzdbRating(czdb.hodnoceni)) : cached?.csfdRating;
   const csfdUrl = czdb?.csfd_url ?? cached?.csfdUrl;
 
-  const userMovie = await prisma.userMovie.findUnique({
-    where: { userId_tmdbId: { userId, tmdbId } },
-  });
+  const [userMovie, favoriteRows] = await Promise.all([
+    prisma.userMovie.findUnique({
+      where: { userId_tmdbId: { userId, tmdbId } },
+    }),
+    prisma.favoritePerson.findMany({ where: { userId }, select: { tmdbPersonId: true } }),
+  ]);
+  const favoriteIds = new Set(favoriteRows.map((f) => f.tmdbPersonId));
 
   const t = await getTranslations("movie");
   const poster = posterUrl(movie.poster_path, "w500") ?? czdb?.obrazek_url;
   const directors = getDirectors(movie);
-  const writers = getWriters(movie);
-  const composers = getComposers(movie);
+  // TMDB vede jednoho člověka klidně jako Screenplay i Writer.
+  const uniqueById = <P extends { id: number }>(people: P[]) =>
+    people.filter((p, i) => people.findIndex((x) => x.id === p.id) === i);
+  const writers = uniqueById(getWriters(movie));
+  const composers = uniqueById(getComposers(movie));
+  const personLink = (p: { id: number; name: string }) => ({
+    key: p.id,
+    name: p.name,
+    href: `/${locale}/person/${p.id}`,
+    favorite: favoriteIds.has(p.id),
+  });
   const tmdbTrailers = getTrailers(movie);
   const czdbTrailerList = czdb ? czdbTrailers(czdb) : [];
   const czechTitle = czdb?.nazev ?? getCzechTitle(movie);
@@ -147,19 +160,19 @@ export default async function MoviePage({
     {
       label: t("director"),
       people: directors.length
-        ? directors.map((d) => ({ key: d.id, name: d.name, href: `/${locale}/person/${d.id}` }))
+        ? directors.map(personLink)
         : splitPeople(czdb?.rezie).map((name) => ({ key: name, name })),
     },
     {
       label: t("writer"),
       people: writers.length
-        ? writers.slice(0, 5).map((w) => ({ key: w.id, name: w.name }))
+        ? writers.slice(0, 5).map(personLink)
         : splitPeople(czdb?.scenar).map((name) => ({ key: name, name })),
     },
     {
       label: t("composer"),
       people: composers.length
-        ? composers.map((c) => ({ key: c.id, name: c.name }))
+        ? composers.map(personLink)
         : czdb?.hudba && czdb.hudba !== "N/A"
           ? splitPeople(czdb.hudba).map((name) => ({ key: name, name }))
           : [],
@@ -173,8 +186,9 @@ export default async function MoviePage({
         character: c.character,
         photo: profileUrl(c.profile_path),
         href: `/${locale}/person/${c.id}`,
+        favorite: favoriteIds.has(c.id),
       }))
-    : splitPeople(czdb?.herci).map((name) => ({ key: name, name, character: undefined, photo: null, href: null }));
+    : splitPeople(czdb?.herci).map((name) => ({ key: name, name, character: undefined, photo: null, href: null, favorite: false }));
 
   const trailers = [
     ...tmdbTrailers.map((tr) => ({ key: tr.key, name: tr.name, url: `https://www.youtube.com/watch?v=${tr.key}` })),
@@ -269,6 +283,9 @@ export default async function MoviePage({
                       {"href" in p && p.href ? (
                         <Link href={p.href} className="underline-offset-4 hover:underline">
                           {p.name}
+                          {"favorite" in p && p.favorite && (
+                            <Heart className="ml-1 inline size-3 -translate-y-px fill-primary text-primary" />
+                          )}
                         </Link>
                       ) : (
                         p.name
@@ -294,7 +311,9 @@ export default async function MoviePage({
               {cast.map((c) => {
                 const body = (
                   <>
-                    <div className="relative mx-auto size-16 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={`relative mx-auto size-16 overflow-hidden rounded-full bg-muted ${c.favorite ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
+                    >
                       {c.photo ? (
                         <Image src={c.photo} alt="" fill className="object-cover" />
                       ) : (

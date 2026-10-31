@@ -18,6 +18,7 @@ model User {
   dataReports MovieDataReport[]
   bookReports BookDataReport[]
   tasteProfiles TasteProfile[]
+  favoritePeople FavoritePerson[]
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 }
@@ -158,4 +159,19 @@ model TasteProfile {
   updatedAt     DateTime @updatedAt
 
   @@unique([userId, media])
+}
+
+/// Oblíbení tvůrci (herci, režiséři, scenáristé, skladatelé) z TMDB.
+model FavoritePerson {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tmdbPersonId Int
+  name         String
+  profilePath  String?
+  department   String   // TMDB known_for_department: Acting, Directing, Writing, Sound…
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, tmdbPersonId])
+  @@index([userId, createdAt])
 }

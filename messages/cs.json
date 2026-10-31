@@ -53,7 +53,8 @@
     "reasonBecause": "Podobné jako {title}",
     "reasonGenres": "Sedí tvému vkusu: {genres}",
     "reasonExplore": "Objevování mimo tvou bublinu",
-    "reasonAi": "AI tip: {text}"
+    "reasonAi": "AI tip: {text}",
+    "reasonPerson": "Protože máš rád: {name}"
   },
   "bookSwipe": {
     "read": "Přečteno",
@@ -141,7 +142,10 @@
     "statusWatched": "Viděl jsem",
     "statusRead": "Přečteno",
     "statusNotInterested": "Nezajímá mě",
-    "filterAll": "Vše"
+    "filterAll": "Vše",
+    "people": "Lidé",
+    "peopleEmpty": "Zatím žádní oblíbení tvůrci. Otevři herce nebo režiséra z detailu filmu a dej mu srdíčko.",
+    "peopleHint": "Tvůrci, které máš rád. Jejich filmy se přimíchávají do nabídky."
   },
   "stats": {
     "title": "Statistiky",
@@ -192,5 +196,19 @@
     "loading": "Načítám…",
     "error": "Něco se pokazilo",
     "retry": "Zkusit znovu"
+  },
+  "person": {
+    "favorite": "Oblíbený",
+    "addFavorite": "Do oblíbených",
+    "films": "Filmy",
+    "seen": "Viděno {seen} z {total}",
+    "dept_Acting": "Herectví",
+    "dept_Directing": "Režie",
+    "dept_Writing": "Scénář",
+    "dept_Sound": "Hudba",
+    "dept_Other": "Ostatní",
+    "filter_all": "Vše",
+    "filter_unseen": "Neviděné",
+    "otherCredits": "Další účast"
   }
 }

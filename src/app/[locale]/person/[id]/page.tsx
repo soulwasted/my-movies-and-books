@@ -3,10 +3,11 @@ import { prisma } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { setRequestLocale } from "next-intl/server";
-import { getPersonDetails, profileUrl, isTmdbConfigured } from "@/lib/tmdb";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getPersonDetails, getPersonCraftFilms, profileUrl, posterUrl, isTmdbConfigured } from "@/lib/tmdb";
 import { explainPersonFilms, formatAiResponseText } from "@/lib/ai";
-import { Badge } from "@/components/ui/badge";
+import { FavoritePersonButton } from "@/components/favorite-person-button";
+import { Check, Heart } from "lucide-react";
 
 export default async function PersonPage({
   params,
@@ -29,13 +30,23 @@ export default async function PersonPage({
     notFound();
   }
 
-  const userMovies = await prisma.userMovie.findMany({
-    where: { userId },
-    select: { tmdbId: true, status: true },
-  });
+  const t = await getTranslations("person");
+  const [userMovies, favorite] = await Promise.all([
+    prisma.userMovie.findMany({
+      where: { userId },
+      select: { tmdbId: true, status: true },
+    }),
+    prisma.favoritePerson.findUnique({
+      where: { userId_tmdbPersonId: { userId, tmdbPersonId: personId } },
+      select: { id: true },
+    }),
+  ]);
   const userMap = new Map(userMovies.map((m) => [m.tmdbId, m.status]));
 
+  // Nejdřív tvorba v jeho profesi, pak ostatní účast (produkce, cameo, dokumenty o něm).
+  const craft = getPersonCraftFilms(person);
   const allCredits = [
+    ...craft,
     ...(person.movie_credits?.crew ?? []),
     ...(person.movie_credits?.cast ?? []),
   ];
@@ -44,9 +55,14 @@ export default async function PersonPage({
     if (!uniqueMovies.has(m.id)) uniqueMovies.set(m.id, m);
   }
 
-  const films = [...uniqueMovies.values()].sort(
-    (a, b) => (b.release_date ?? "").localeCompare(a.release_date ?? ""),
-  );
+  const craftIds = new Set(craft.map((c) => c.id));
+  const byDate = (a: (typeof allCredits)[0], b: (typeof allCredits)[0]) =>
+    (b.release_date ?? "").localeCompare(a.release_date ?? "");
+  const mainFilms = [...uniqueMovies.values()].filter((f) => craftIds.has(f.id)).sort(byDate);
+  const otherFilms = [...uniqueMovies.values()]
+    .filter((f) => !craftIds.has(f.id))
+    .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
+  const films = [...mainFilms, ...otherFilms];
 
   const unwatched = films
     .filter((f) => !userMap.has(f.id) || userMap.get(f.id) === "SKIPPED")
@@ -66,61 +82,96 @@ export default async function PersonPage({
       : "";
 
   const photo = profileUrl(person.profile_path);
+  const seenCount = films.filter((f) => userMap.get(f.id) === "WATCHED").length;
+  const role = (film: (typeof films)[0]) =>
+    "character" in film && film.character ? film.character : "job" in film ? film.job : null;
+
+  const filmCard = (film: (typeof films)[0]) => {
+    const status = userMap.get(film.id);
+    return (
+      <Link key={film.id} href={`/${locale}/movie/${film.id}`} className="group">
+        <div className="relative aspect-[2/3] overflow-hidden rounded-md bg-muted ring-1 ring-white/5">
+          <Image
+            src={posterUrl(film.poster_path, "w342")!}
+            alt=""
+            fill
+            className="object-cover transition-transform group-hover:scale-[1.03]"
+          />
+          {(status === "WATCHED" || status === "WANT") && (
+            <span className="absolute right-1.5 top-1.5 flex size-6 items-center justify-center rounded-full bg-background/80 backdrop-blur">
+              {status === "WATCHED" ? (
+                <Check className="size-3.5 text-primary" />
+              ) : (
+                <Heart className="size-3.5 fill-primary text-primary" />
+              )}
+            </span>
+          )}
+        </div>
+        <p className="mt-1.5 line-clamp-2 text-xs font-medium leading-snug">{film.title}</p>
+        <p className="line-clamp-1 text-[11px] text-muted-foreground">
+          {[film.release_date?.slice(0, 4), role(film)].filter(Boolean).join(" · ")}
+        </p>
+      </Link>
+    );
+  };
 
   return (
-    <main className="flex flex-1 flex-col px-4 pb-24 pt-6">
-      <div className="flex gap-4">
-        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full bg-muted">
-          {photo && <Image src={photo} alt={person.name} fill className="object-cover" />}
+    <main className="flex flex-1 flex-col px-4 pb-24 pt-8 sm:px-6">
+      <div className="flex items-center gap-5">
+        <div className="relative size-24 shrink-0 overflow-hidden rounded-full bg-muted ring-1 ring-white/10 sm:size-32">
+          {photo ? (
+            <Image src={photo} alt={person.name} fill className="object-cover" />
+          ) : (
+            <span className="flex size-full items-center justify-center text-3xl text-muted-foreground">
+              {person.name.charAt(0)}
+            </span>
+          )}
         </div>
-        <div>
-          <h1 className="text-2xl font-bold">{person.name}</h1>
-          <p className="text-sm text-muted-foreground">{person.known_for_department}</p>
+        <div className="min-w-0 space-y-2">
+          <h1 className="text-2xl font-bold leading-tight tracking-tight text-balance sm:text-3xl">{person.name}</h1>
+          <p className="text-sm text-muted-foreground">
+            {person.known_for_department}
+            {seenCount > 0 && (
+              <span className="tabular-nums"> · {t("seen", { seen: seenCount, total: films.length })}</span>
+            )}
+          </p>
+          <FavoritePersonButton
+            person={{
+              tmdbPersonId: person.id,
+              name: person.name,
+              profilePath: person.profile_path,
+              department: person.known_for_department,
+            }}
+            initialFavorite={!!favorite}
+          />
         </div>
       </div>
 
       {aiTip && (
-        <section className="mt-6 rounded-xl border border-border/50 bg-card/50 p-4">
+        <section className="mt-8 rounded-xl border border-border/50 bg-card/50 p-4">
           <h2 className="mb-2 text-sm font-semibold">AI tip</h2>
           <p className="whitespace-pre-wrap text-sm text-muted-foreground">{aiTip}</p>
         </section>
       )}
 
-      <h2 className="mb-3 mt-6 font-semibold">Filmy</h2>
-      <div className="space-y-2">
-        {films.slice(0, 30).map((film) => {
-          const status = userMap.get(film.id);
-          return (
-            <Link
-              key={film.id}
-              href={`/${locale}/movie/${film.id}`}
-              className="flex items-center justify-between rounded-lg border border-border/40 px-3 py-2 hover:bg-muted/50"
-            >
-              <span className="text-sm">
-                {film.title}{" "}
-                <span className="text-muted-foreground">
-                  ({film.release_date?.slice(0, 4)})
-                </span>
-              </span>
-              {status === "WATCHED" && (
-                <Badge variant="secondary" className="text-xs">
-                  ✓
-                </Badge>
-              )}
-              {status === "WANT" && (
-                <Badge variant="outline" className="text-xs">
-                  ♥
-                </Badge>
-              )}
-              {!status && (
-                <Badge variant="outline" className="text-xs text-primary">
-                  new
-                </Badge>
-              )}
-            </Link>
-          );
-        })}
-      </div>
+      {[
+        { key: "craft", label: t("films"), items: mainFilms },
+        { key: "other", label: t("otherCredits"), items: otherFilms },
+      ]
+        .filter((g) => g.items.some((f) => f.poster_path))
+        .map((g) => (
+          <section key={g.key} className="mt-8">
+            <h2 className="mb-3 text-sm font-semibold">
+              {g.label} <span className="font-normal text-muted-foreground tabular-nums">{g.items.length}</span>
+            </h2>
+            <div className="grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-5">
+              {g.items
+                .filter((f) => f.poster_path)
+                .slice(0, g.key === "craft" ? 40 : 15)
+                .map(filmCard)}
+            </div>
+          </section>
+        ))}
     </main>
   );
 }

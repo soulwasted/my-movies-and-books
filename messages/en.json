@@ -53,7 +53,8 @@
     "reasonBecause": "Similar to {title}",
     "reasonGenres": "Matches your taste: {genres}",
     "reasonExplore": "Exploring outside your bubble",
-    "reasonAi": "AI pick: {text}"
+    "reasonAi": "AI pick: {text}",
+    "reasonPerson": "Because you like {name}"
   },
   "bookSwipe": {
     "read": "Read",
@@ -141,7 +142,10 @@
     "statusWatched": "Watched",
     "statusRead": "Read",
     "statusNotInterested": "Not interested",
-    "filterAll": "All"
+    "filterAll": "All",
+    "people": "People",
+    "peopleEmpty": "No favourite people yet. Open an actor or director from a movie and tap the heart.",
+    "peopleHint": "People you like. Their films are mixed into your queue."
   },
   "stats": {
     "title": "Statistics",
@@ -192,5 +196,19 @@
     "loading": "Loading…",
     "error": "Something went wrong",
     "retry": "Retry"
+  },
+  "person": {
+    "favorite": "Favourite",
+    "addFavorite": "Add to favourites",
+    "films": "Films",
+    "seen": "Seen {seen} of {total}",
+    "dept_Acting": "Acting",
+    "dept_Directing": "Directing",
+    "dept_Writing": "Writing",
+    "dept_Sound": "Music",
+    "dept_Other": "Other",
+    "filter_all": "All",
+    "filter_unseen": "Unseen",
+    "otherCredits": "Other credits"
   }
 }
