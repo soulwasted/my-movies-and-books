@@ -5,11 +5,12 @@
   },
   "nav": {
     "home": "Domů",
-    "discover": "Objevovat",
+    "discover": "Hledat",
     "library": "Knihovna",
     "stats": "Statistiky",
     "settings": "Nastavení",
-    "ai": "AI asistent"
+    "ai": "AI asistent",
+    "me": "Já"
   },
   "auth": {
     "signIn": "Přihlásit se",
@@ -140,7 +141,9 @@
     "filterAll": "Vše",
     "people": "Lidé",
     "peopleEmpty": "Zatím žádní oblíbení tvůrci. Otevři herce nebo režiséra z detailu filmu a dej mu srdíčko.",
-    "peopleHint": "Tvůrci, které máš rád. Jejich filmy se přimíchávají do nabídky."
+    "peopleHint": "Tvůrci, které máš rád. Jejich filmy se přimíchávají do nabídky.",
+    "tipTitle": "Dnešní tipy",
+    "tipSubtitle": "Swipuj nové filmy a hodnoť"
   },
   "stats": {
     "title": "Statistiky",
@@ -154,13 +157,16 @@
     "avgBookRating": "Průměrné hodnocení knih"
   },
   "discover": {
-    "title": "Objevovat",
+    "title": "Hledat",
     "search": "Hledat…",
     "searchMovie": "Hledat film…",
     "searchBook": "Hledat knihu…",
     "movies": "Filmy",
     "books": "Knihy",
-    "filterGenre": "Žánr"
+    "filterGenre": "Žánr",
+    "tabSearch": "Hledat",
+    "tabAi": "AI asistent",
+    "tabTips": "Tipy"
   },
   "settings": {
     "title": "Nastavení",
@@ -292,5 +298,8 @@
       "no": "Nezajímá mě",
       "later": "Přeskočit"
     }
+  },
+  "me": {
+    "title": "Já"
   }
 }

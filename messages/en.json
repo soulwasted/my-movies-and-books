@@ -5,11 +5,12 @@
   },
   "nav": {
     "home": "Home",
-    "discover": "Discover",
+    "discover": "Search",
     "library": "Library",
     "stats": "Stats",
     "settings": "Settings",
-    "ai": "AI Assistant"
+    "ai": "AI Assistant",
+    "me": "Me"
   },
   "auth": {
     "signIn": "Sign in",
@@ -140,7 +141,9 @@
     "filterAll": "All",
     "people": "People",
     "peopleEmpty": "No favourite people yet. Open an actor or director from a movie and tap the heart.",
-    "peopleHint": "People you like. Their films are mixed into your queue."
+    "peopleHint": "People you like. Their films are mixed into your queue.",
+    "tipTitle": "Today’s picks",
+    "tipSubtitle": "Swipe new movies and rate them"
   },
   "stats": {
     "title": "Statistics",
@@ -154,13 +157,16 @@
     "avgBookRating": "Average book rating"
   },
   "discover": {
-    "title": "Discover",
+    "title": "Search",
     "search": "Search…",
     "searchMovie": "Search movies…",
     "searchBook": "Search books…",
     "movies": "Movies",
     "books": "Books",
-    "filterGenre": "Genre"
+    "filterGenre": "Genre",
+    "tabSearch": "Search",
+    "tabAi": "AI Assistant",
+    "tabTips": "Picks"
   },
   "settings": {
     "title": "Settings",
@@ -292,5 +298,8 @@
       "no": "Not for me",
       "later": "Skip"
     }
+  },
+  "me": {
+    "title": "Me"
   }
 }

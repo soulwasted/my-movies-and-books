@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Film, Compass, Library, BarChart3, Sparkles, Settings } from "lucide-react";
+import { Library, Search, CircleUser } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function AppNav({ locale }: { locale: string }) {
@@ -11,22 +11,14 @@ export function AppNav({ locale }: { locale: string }) {
   const t = useTranslations("nav");
 
   const links = [
-    { href: `/${locale}`, icon: Film, label: t("home"), match: new RegExp(`^/${locale}$`) },
     {
-      href: `/${locale}/discover`,
-      icon: Compass,
-      label: t("discover"),
-      match: /discover/,
-    },
-    {
-      href: `/${locale}/library`,
+      href: `/${locale}`,
       icon: Library,
       label: t("library"),
-      match: /library/,
+      match: new RegExp(`^/${locale}(/library)?$`),
     },
-    { href: `/${locale}/ai`, icon: Sparkles, label: t("ai"), match: /\/ai/ },
-    { href: `/${locale}/stats`, icon: BarChart3, label: t("stats"), match: /stats/ },
-    { href: `/${locale}/settings`, icon: Settings, label: t("settings"), match: /settings/ },
+    { href: `/${locale}/discover`, icon: Search, label: t("discover"), match: /discover/ },
+    { href: `/${locale}/me`, icon: CircleUser, label: t("me"), match: /\/me$/ },
   ];
 
   return (
