@@ -58,6 +58,7 @@
     "undo": "Vrátit předchozí knihu"
   },
   "movie": {
+    "backToContent": "Zpět na obsah",
     "director": "Režie",
     "writer": "Scénář",
     "cast": "Herci",
@@ -75,6 +76,8 @@
     "csfd": "ČSFD",
     "similar": "Podobné filmy",
     "aiWhy": "Proč by se ti líbil",
+    "aiWhyHint": "AI podle tvých hodnocení vysvětlí, proč by tě film mohl bavit, a doporučí podobné.",
+    "aiWhyButton": "Zeptat se AI",
     "detailLink": "Detail filmu",
     "aiThinking": "AI přemýšlí…",
     "noPoster": "Bez plakátu"
@@ -88,6 +91,8 @@
     "czechTitle": "Český název",
     "databazeKnih": "Databáze knih",
     "aiWhy": "Proč by se ti líbila",
+    "aiWhyHint": "AI podle tvých hodnocení vysvětlí, proč by tě kniha mohla bavit, a doporučí podobné.",
+    "aiWhyButton": "Zeptat se AI",
     "detailLink": "Detail knihy",
     "noCover": "Bez obálky"
   },

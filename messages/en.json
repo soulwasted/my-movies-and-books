@@ -58,6 +58,7 @@
     "undo": "Undo last book"
   },
   "movie": {
+    "backToContent": "Back to content",
     "director": "Director",
     "writer": "Writer",
     "cast": "Cast",
@@ -75,6 +76,8 @@
     "csfd": "ČSFD",
     "similar": "Similar movies",
     "aiWhy": "Why you might like it",
+    "aiWhyHint": "Based on your ratings, AI explains why you might enjoy this film and suggests similar ones.",
+    "aiWhyButton": "Ask AI",
     "detailLink": "Movie details",
     "aiThinking": "AI is thinking…",
     "noPoster": "No poster"
@@ -88,6 +91,8 @@
     "czechTitle": "Czech title",
     "databazeKnih": "Databáze knih",
     "aiWhy": "Why you might like it",
+    "aiWhyHint": "Based on your ratings, AI explains why you might enjoy this book and suggests similar ones.",
+    "aiWhyButton": "Ask AI",
     "detailLink": "Book details",
     "noCover": "No cover"
   },

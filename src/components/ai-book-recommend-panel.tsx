@@ -57,9 +57,12 @@ export function AiBookRecommendPanel({
         <h2 className="font-semibold">{t("aiWhy")}</h2>
         <Button size="sm" variant="ghost" onClick={fetchWhy} disabled={loading}>
           <Sparkles className="mr-1 h-4 w-4" />
-          AI
+          {response ? "AI" : t("aiWhyButton")}
         </Button>
       </div>
+      {!response && !loading && !error && (
+        <p className="mt-2 text-sm text-muted-foreground">{t("aiWhyHint")}</p>
+      )}
       {loading && <ElapsedLoader label={tAi("thinking")} steps={aiSteps.labels} className="mt-3" />}
       {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
       {response && (

@@ -53,6 +53,7 @@ export type TmdbMovieDetail = {
   videos: { results: TmdbVideo[] };
   recommendations?: { results: TmdbMovieListItem[] };
   similar?: { results: TmdbMovieListItem[] };
+  images?: { logos: TmdbImage[] };
   translations?: {
     translations: Array<{
       iso_3166_1: string;
@@ -60,6 +61,13 @@ export type TmdbMovieDetail = {
       data: { title: string; overview: string };
     }>;
   };
+};
+
+export type TmdbImage = {
+  file_path: string;
+  iso_639_1: string | null;
+  width: number;
+  height: number;
 };
 
 export type TmdbPerson = {
@@ -112,6 +120,15 @@ export function backdropUrl(path: string | null) {
   return `${TMDB_IMAGE}/w1280${path}`;
 }
 
+// Logo filmu: přednost má jazyk stránky, pak angličtina, pak bez textu; PNG před SVG (next/image SVG neoptimalizuje).
+export function getLogo(movie: TmdbMovieDetail, locale: "cs" | "en") {
+  const logos = movie.images?.logos ?? [];
+  const rank = (l: TmdbImage) =>
+    (l.iso_639_1 === locale ? 0 : l.iso_639_1 === "en" ? 2 : 4) + (l.file_path.endsWith(".png") ? 0 : 1);
+  const best = [...logos].sort((a, b) => rank(a) - rank(b))[0];
+  return best ? { url: `${TMDB_IMAGE}/w500${best.file_path}`, width: best.width, height: best.height } : null;
+}
+
 export function profileUrl(path: string | null) {
   if (!path) return null;
   return `${TMDB_IMAGE}/w185${path}`;
@@ -134,7 +151,10 @@ export async function getMovieDetails(id: number, locale = "cs-CZ"): Promise<Tmd
   // Jeden request místo čtyř: credits, videos a translations přes append_to_response.
   return tmdbFetch<TmdbMovieDetail>(`/movie/${id}`, {
     language: locale,
-    append_to_response: "external_ids,credits,videos,translations,recommendations,similar",
+    append_to_response: "external_ids,credits,videos,translations,recommendations,similar,images",
+    include_image_language: `${locale.slice(0, 2)},en,null`,
+    // Bez toho TMDB vrací jen videa v jazyku stránky a česky trailer většina filmů nemá.
+    include_video_language: `${locale.slice(0, 2)},en`,
   });
 }
 
