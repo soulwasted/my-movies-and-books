@@ -10,7 +10,9 @@ import {
 } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ColorSchemeProvider } from "@/components/color-scheme-provider";
+import { LoaderProvider } from "@/components/loader-provider";
 import "./globals.css";
+import "./loaders.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin", "latin-ext"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin", "latin-ext"] });
@@ -81,7 +83,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           suppressHydrationWarning
         >
           <ThemeProvider>
-            <ColorSchemeProvider>{children}</ColorSchemeProvider>
+            <ColorSchemeProvider>
+              <LoaderProvider>{children}</LoaderProvider>
+            </ColorSchemeProvider>
           </ThemeProvider>
         </body>
       </html>

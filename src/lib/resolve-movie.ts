@@ -38,17 +38,24 @@ function cleanTitle(title: string, year: number): string {
 export async function resolveMovieTmdbId(
   title: string,
   year: number,
+  /** Další názvy, originální první (AI v češtině vrací v `title` český název). */
+  alternatives: Array<string | null | undefined> = [],
 ): Promise<number | null> {
-  const queries = [cleanTitle(title, year), title.trim()].filter(
-    (q, i, arr) => q && arr.indexOf(q) === i,
-  );
+  const queries = [...alternatives, title]
+    .flatMap((t) => (t ? [cleanTitle(t, year), t.trim()] : []))
+    .filter((q, i, arr) => q && arr.indexOf(q) === i);
 
-  // AI vrací anglické / mezinárodní názvy → hledat v en-US, nejdřív bez filtru roku
-  // (TMDB primary_release_year se u festivalových filmů liší od „známého“ roku).
-  for (const yearFilter of [undefined, year]) {
+  // Anglické / originální názvy → en-US, nejdřív bez filtru roku (TMDB primary_release_year
+  // se u festivalových filmů liší od „známého“ roku). Nakonec cs-CZ pro české názvy.
+  const attempts: Array<[number | undefined, string]> = [
+    [undefined, "en-US"],
+    [year, "en-US"],
+    [undefined, "cs-CZ"],
+  ];
+  for (const [yearFilter, language] of attempts) {
     for (const query of queries) {
       try {
-        const data = await searchMovies(query, yearFilter, "en-US");
+        const data = await searchMovies(query, yearFilter, language);
         const match = pickBestMatch(data.results, year, query);
         if (match) return match.id;
       } catch {

@@ -7,7 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles, Send } from "lucide-react";
 import { AiResponseView } from "@/components/ai-response-view";
+import { ElapsedLoader } from "@/components/elapsed-loader";
 import type { AiStructuredResponse } from "@/lib/ai";
+import { booksEnabled } from "@/lib/features";
 
 type ChatMessage =
   | { role: "user"; text: string }
@@ -73,6 +75,7 @@ export function AiChatClient({ locale }: { locale: string }) {
 
   return (
     <div className="mt-4 flex flex-1 flex-col gap-4">
+      {booksEnabled && (
       <Tabs
         value={media}
         onValueChange={(v) => setMedia(v as "movie" | "book")}
@@ -82,6 +85,7 @@ export function AiChatClient({ locale }: { locale: string }) {
           <TabsTrigger value="book">{t("books")}</TabsTrigger>
         </TabsList>
       </Tabs>
+      )}
 
       <Button variant="outline" onClick={recommend} disabled={loading}>
         <Sparkles className="mr-2 h-4 w-4" />
@@ -111,7 +115,7 @@ export function AiChatClient({ locale }: { locale: string }) {
             )}
           </div>
         ))}
-        {loading && <p className="text-sm text-muted-foreground">…</p>}
+        {loading && <ElapsedLoader label={t("thinking")} />}
       </div>
 
       <div className="flex gap-2">

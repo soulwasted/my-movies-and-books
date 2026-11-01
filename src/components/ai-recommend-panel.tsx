@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
 import { AiResponseView } from "@/components/ai-response-view";
+import { ElapsedLoader } from "@/components/elapsed-loader";
 import type { AiStructuredResponse } from "@/lib/ai";
 
 export function AiRecommendPanel({
@@ -57,6 +58,7 @@ export function AiRecommendPanel({
           AI
         </Button>
       </div>
+      {loading && <ElapsedLoader label={t("aiThinking")} className="mt-3" />}
       {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
       {response && (
         <div className="mt-3">

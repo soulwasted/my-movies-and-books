@@ -150,7 +150,22 @@ type MatchOptions = {
   year?: string;
   /** Názvy filmu z TMDB (lokalizovaný, originální, anglický…). */
   titles?: Array<string | null | undefined>;
+  /** Režiséři z TMDB; CZDB s jinou režií je jiný film, i když nese naše TMDB ID. */
+  directors?: string[];
 };
+
+/** Příjmení na první čtyři znaky: snese přepis (Tarkovskij / Tarkovsky). */
+function surnameKey(name: string): string {
+  const last = name.trim().split(/\s+/).pop() ?? "";
+  return normTitle(last).slice(0, 4);
+}
+
+function sameDirector(czdbRezie: string | undefined, tmdbDirectors: string[] | undefined): boolean | null {
+  const czdbNames = splitPeople(czdbRezie);
+  if (!czdbNames.length || !tmdbDirectors?.length) return null;
+  const wanted = new Set(tmdbDirectors.map(surnameKey).filter(Boolean));
+  return czdbNames.some((n) => wanted.has(surnameKey(n)));
+}
 
 function normTitle(value: string | null | undefined): string {
   if (!value || EMPTY.has(value.trim()) || value.trim() === "@") return "";
@@ -164,16 +179,17 @@ function normTitle(value: string | null | undefined): string {
 /**
  * Ani jedno ID z CZDB není spolehlivé: hledání podle IMDb vrací cizí filmy
  * s razítkem dotazovaného IMDb ID (Pulp Fiction → „Svědectví“) a `tmdb_id`
- * je občas jiné (Dunkerk). Rozhoduje proto shoda TMDB ID, nebo přesná shoda
- * originálního názvu a rok ±1.
+ * bývá jiné (Dunkerk), nebo naopak cizí film nese naše (Stud 2011 → Bergmanova
+ * Hanba 1968). Jiná režie nebo rok mimo ±1 vyřazuje vždy; pak rozhoduje shoda
+ * TMDB ID, nebo přesná shoda originálního názvu.
  */
 export function isValidCzdbMatch(film: CzdbFilm, options: MatchOptions): boolean {
   film = normalizeCzdbFilm(film);
-  if (options.tmdbId && film.tmdb_id === options.tmdbId) return true;
-
+  if (sameDirector(film.rezie, options.directors) === false) return false;
   if (options.year && film.rok) {
     if (Math.abs(parseInt(options.year, 10) - film.rok) > 1) return false;
   }
+  if (options.tmdbId && film.tmdb_id === options.tmdbId) return true;
 
   const wanted = new Set((options.titles ?? []).map(normTitle).filter(Boolean));
   if (wanted.size === 0) {
@@ -218,6 +234,7 @@ export async function resolveCzdbForMovie(options: {
   year?: string;
   imdbId?: string | null;
   tmdbId?: number;
+  directors?: string[];
   rejectedIds?: number[];
 }): Promise<CzdbFilm | null> {
   const searchTitles = [

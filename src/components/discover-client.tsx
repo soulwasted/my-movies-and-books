@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { posterUrl, type TmdbMovieListItem } from "@/lib/tmdb";
 import { coverUrl, type GoogleBookListItem } from "@/lib/google-books";
+import { booksEnabled } from "@/lib/features";
 
 function MovieSearch({ locale }: { locale: string }) {
   const t = useTranslations("discover");
@@ -133,6 +134,14 @@ function BookSearch({ locale }: { locale: string }) {
 
 export function DiscoverClient({ locale }: { locale: string }) {
   const t = useTranslations("discover");
+
+  if (!booksEnabled) {
+    return (
+      <div className="mt-4">
+        <MovieSearch locale={locale} />
+      </div>
+    );
+  }
 
   return (
     <Tabs defaultValue="movies" className="mt-4">

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ensureUser } from "@/lib/user";
 import { AppearanceSettings } from "@/components/appearance-settings";
+import { booksEnabled } from "@/lib/features";
 
 export default async function SettingsPage({
   params,
@@ -53,11 +54,13 @@ export default async function SettingsPage({
           </Link>
         </div>
 
-        <div>
-          <Link href={`/${locale}/onboarding`}>
-            <Button variant="outline">{t("bookCategories")}</Button>
-          </Link>
-        </div>
+        {booksEnabled && (
+          <div>
+            <Link href={`/${locale}/onboarding`}>
+              <Button variant="outline">{t("bookCategories")}</Button>
+            </Link>
+          </div>
+        )}
 
         {user?.imageUrl && (
           <div className="flex items-center gap-3 pt-4">

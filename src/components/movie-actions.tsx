@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
 import { RatingDialog } from "@/components/rating-dialog";
 import { StarRatingDisplay } from "@/components/star-rating-display";
 import { saveMovieAction } from "@/lib/actions";
 import { normalizeToScale } from "@/lib/rating";
-import { Heart, Check, ThumbsDown } from "lucide-react";
+import { MovieDecisionButtons } from "@/components/decision-buttons";
 
 type UserMovie = {
   status: string;
@@ -23,7 +21,6 @@ export function MovieActions({
   userMovie: UserMovie;
   locale: string;
 }) {
-  const t = useTranslations("swipe");
   const [status, setStatus] = useState(userMovie?.status ?? null);
   const [rating, setRating] = useState<number | null>(userMovie?.rating ?? null);
   const [ratingType, setRatingType] = useState<string | null>(
@@ -68,27 +65,11 @@ export function MovieActions({
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
-        <Button
-          variant={status === "WATCHED" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setRatingOpen(true)}
-        >
-          <Check className="mr-1 h-4 w-4" /> {t("watched")}
-        </Button>
-        <Button
-          variant={status === "WANT" ? "default" : "outline"}
-          size="sm"
-          onClick={() => update("WANT")}
-        >
-          <Heart className="mr-1 h-4 w-4" /> {t("want")}
-        </Button>
-        <Button
-          variant={status === "NOT_INTERESTED" ? "default" : "outline"}
-          size="sm"
-          onClick={() => update("NOT_INTERESTED")}
-        >
-          <ThumbsDown className="mr-1 h-4 w-4" /> {t("notInterested")}
-        </Button>
+        <MovieDecisionButtons
+          variant="inline"
+          status={status}
+          onDecide={(d) => (d === "WATCHED" ? setRatingOpen(true) : update(d))}
+        />
         {rating != null && status === "WATCHED" && (
           <button
             type="button"

@@ -1,0 +1,72 @@
+/* Styly načítání pro ElapsedLoader (src/components/loaders.tsx). */
+
+:root {
+  --loader-accent: oklch(0.72 0.17 10);
+}
+
+.ldr-line { display: grid; gap: 8px; width: min(240px, 100%); }
+.ldr-row { display: flex; justify-content: space-between; gap: 8px; }
+.ldr-stack { display: grid; justify-items: center; gap: 8px; }
+.ldr-bar { position: relative; height: 2px; border-radius: 2px; background: var(--border); overflow: hidden; }
+
+/* 02b — kometa */
+.ldr-comet { overflow: visible; clip-path: inset(-4px 0); }
+.ldr-comet::after { content: ""; position: absolute; inset: 0; width: 45%; border-radius: 2px; background: linear-gradient(90deg, transparent, var(--loader-accent)); animation: ldr-slide 1.8s cubic-bezier(.65, 0, .35, 1) infinite; }
+.ldr-comet::before { content: ""; position: absolute; top: -2px; width: 6px; height: 6px; border-radius: 50%; background: var(--loader-accent); box-shadow: 0 0 10px 2px var(--loader-accent); animation: ldr-head 1.8s cubic-bezier(.65, 0, .35, 1) infinite; }
+@keyframes ldr-slide { from { transform: translateX(-100%); } to { transform: translateX(290%); } }
+@keyframes ldr-head { from { left: 0; transform: translateX(-200%); } to { left: 100%; transform: translateX(200%); } }
+
+/* 02c — zpomalující se průběh */
+.ldr-easing { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: var(--foreground); transition: width .25s linear; }
+.ldr-easing::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--background) 70%, transparent), transparent) no-repeat; background-size: 50% 100%; animation: ldr-shine 1.6s linear infinite; }
+@keyframes ldr-shine { from { background-position: -100% 0; } to { background-position: 200% 0; } }
+
+/* 07b, 07c — filmový odpočet */
+@property --ldr-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.ldr-leader { position: relative; display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; overflow: hidden; background: #d4d4d4; }
+.ldr-leader::before { content: ""; position: absolute; inset: 0; background: conic-gradient(rgb(0 0 0 / .35) var(--ldr-a), transparent 0); animation: ldr-sweep 1s linear infinite; }
+.ldr-leader::after { content: ""; position: absolute; inset: 0; opacity: .6; background: linear-gradient(#0a0a0a, #0a0a0a) center / 1px 100% no-repeat, linear-gradient(#0a0a0a, #0a0a0a) center / 100% 1px no-repeat; }
+.ldr-leader-ring { position: absolute; inset: 5px; border-radius: 50%; border: 1.5px solid #fafafa; box-shadow: inset 0 0 0 6px transparent, inset 0 0 0 7px #fafafa; }
+.ldr-leader-n { position: relative; z-index: 1; font: 600 24px/1 var(--font-mono), monospace; color: #0a0a0a; animation: ldr-jitter .12s steps(2) infinite; }
+.ldr-leader-flash { position: absolute; inset: 0; z-index: 2; background: #fff; opacity: 0; animation: ldr-flash 3s linear infinite; }
+.ldr-leader-night { background: #1c1c1c; }
+.ldr-leader-night::before { background: conic-gradient(rgb(255 255 255 / .1) var(--ldr-a), transparent 0); }
+.ldr-leader-night::after { opacity: .25; background: linear-gradient(#fafafa, #fafafa) center / 1px 100% no-repeat, linear-gradient(#fafafa, #fafafa) center / 100% 1px no-repeat; }
+.ldr-leader-night .ldr-leader-ring { border-color: rgb(255 255 255 / .5); box-shadow: inset 0 0 0 6px transparent, inset 0 0 0 7px rgb(255 255 255 / .3); }
+.ldr-leader-night .ldr-leader-n { color: #f5f5f4; }
+.ldr-grain { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; mix-blend-mode: screen; opacity: .35; pointer-events: none; }
+.ldr-scratch { position: absolute; top: 0; bottom: 0; z-index: 2; width: 1px; background: rgb(255 255 255 / .45); animation: ldr-scratch 2.2s steps(1) infinite; }
+@keyframes ldr-sweep { to { --ldr-a: 360deg; } }
+@keyframes ldr-jitter { 50% { transform: translate(.5px, -.5px); } }
+@keyframes ldr-flash { 0%, 96% { opacity: 0; } 97.5% { opacity: .95; } 100% { opacity: 0; } }
+@keyframes ldr-scratch { 0% { left: 30%; opacity: 1; } 18% { left: 62%; } 31% { opacity: 0; } 55% { left: 44%; opacity: .8; } 70% { left: 71%; } 84% { opacity: 0; } }
+
+/* 08a, 08b — klapka */
+.ldr-clap { position: relative; display: block; width: 84px; padding-top: 18px; }
+.ldr-clap-top { position: absolute; top: 0; left: 0; width: 100%; height: 16px; border: 2px solid var(--foreground); border-radius: 3px 3px 0 0; background: repeating-linear-gradient(-55deg, var(--foreground) 0 9px, var(--card) 9px 18px); transform-origin: 2px 15px; animation: ldr-clap 1.6s cubic-bezier(.7, 0, .3, 1) infinite; }
+.ldr-clap-base { position: relative; display: block; height: 52px; border: 2px solid var(--foreground); border-radius: 0 0 4px 4px; background: var(--foreground); }
+.ldr-clap-base::before { content: ""; position: absolute; inset: 0 0 auto; height: 12px; background: repeating-linear-gradient(-55deg, var(--foreground) 0 9px, var(--card) 9px 18px); }
+.ldr-clap-mini { width: 26px; height: 23px; flex: none; }
+.ldr-clap-mini .ldr-clap { transform: scale(.3); transform-origin: 0 0; }
+.ldr-clap-mini .ldr-clap-top, .ldr-clap-mini .ldr-clap-base { border-width: 4px; }
+.ldr-clap-wide { width: 150px; }
+.ldr-clap-wide .ldr-clap-base { height: 72px; }
+.ldr-slate { position: absolute; inset: 14px 0 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: auto 1fr; gap: 2px 6px; padding: 5px 8px; font: 500 8px/1.2 var(--font-mono), monospace; letter-spacing: .06em; color: var(--card); }
+.ldr-slate > span { display: grid; gap: 1px; }
+.ldr-slate b { font-size: 12px; font-weight: 500; letter-spacing: 0; }
+.ldr-slate .ldr-slate-who { grid-column: 1 / -1; align-self: end; padding-top: 3px; border-top: 1px solid color-mix(in srgb, var(--card) 40%, transparent); }
+@keyframes ldr-clap { 0%, 55% { transform: rotate(-24deg); } 68% { transform: rotate(0); } 74% { transform: rotate(-4deg); } 80%, 100% { transform: rotate(0); } }
+
+/* 09, 09a — psací stroj, terminál */
+.ldr-caret { display: inline-block; width: .5em; height: 1.1em; margin-left: 1px; vertical-align: -.2em; background: var(--loader-accent); animation: ldr-caret 1s steps(1) infinite; }
+.ldr-term { display: flex; flex-direction: column; width: min(320px, 100%); padding: 10px 12px; border-radius: 8px; background: #0a0a0a; font: 400 12px/1.6 var(--font-mono), monospace; color: #a3a3a3; }
+.ldr-term > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ldr-term > span::before { content: "› "; color: #525252; }
+.ldr-term-ok { color: #4ade80; }
+.ldr-term-cur { color: #fafafa; }
+.ldr-term-cur::after { content: ""; display: inline-block; width: 7px; height: 13px; margin-left: 2px; vertical-align: -2px; background: #fafafa; animation: ldr-caret 1s steps(1) infinite; }
+@keyframes ldr-caret { 50% { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  [class^="ldr-"], [class^="ldr-"]::before, [class^="ldr-"]::after { animation-duration: 3s !important; }
+}

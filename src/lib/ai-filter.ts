@@ -10,7 +10,7 @@ export async function filterAiResponse(
   const resolved = await Promise.all(
     response.recommendations.map(async (rec): Promise<AiMovieRecommendation | null> => {
       if (isTitleExcluded(rec.title, rec.year, excludedTitles)) return null;
-      const tmdbId = await resolveMovieTmdbId(rec.title, rec.year);
+      const tmdbId = await resolveMovieTmdbId(rec.title, rec.year, [rec.originalTitle]);
       if (tmdbId && excludedTmdbIds.has(tmdbId)) return null;
       return tmdbId ? { ...rec, tmdbId } : rec;
     }),

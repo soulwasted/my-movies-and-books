@@ -6,6 +6,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SwipeDeck } from "@/components/swipe-deck";
 import { BookSwipeDeck } from "@/components/book-swipe-deck";
+import { booksEnabled } from "@/lib/features";
 
 export default async function HomePage({
   params,
@@ -39,6 +40,11 @@ export default async function HomePage({
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </header>
 
+      {!booksEnabled ? (
+        <div className="flex flex-1 flex-col">
+          <SwipeDeck locale={locale} />
+        </div>
+      ) : (
       <Tabs defaultValue="movies" className="flex flex-1 flex-col">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="movies">{t("movies")}</TabsTrigger>
@@ -51,6 +57,7 @@ export default async function HomePage({
           <BookSwipeDeck locale={locale} />
         </TabsContent>
       </Tabs>
+      )}
     </main>
   );
 }

@@ -1,11 +1,12 @@
 import { getSessionUserId, requireUserId } from "@/lib/user";
 import { prisma } from "@/lib/db";
-import { getMovieDetails, getCzechTitle, getEnglishTitle, isTmdbConfigured } from "@/lib/tmdb";
+import { getMovieDetails, getCzechTitle, getDirectors, getEnglishTitle, isTmdbConfigured } from "@/lib/tmdb";
 import {
   resolveCzdbForMovie,
   parseCzdbRating,
   splitPeople,
   normalizeCzdbFilm,
+  isValidCzdbMatch,
   type CzdbFilm,
 } from "@/lib/czdb";
 import { fetchCsfdRating } from "@/lib/csfd";
@@ -43,14 +44,25 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     !cached?.csfdUpdated ||
     Date.now() - cached.csfdUpdated.getTime() > 7 * 24 * 60 * 60 * 1000;
 
+  const year = movieData.release_date?.slice(0, 4);
+  const directors = getDirectors(movieData).map((d) => d.name);
   let czdbFilm: CzdbFilm | null = cached?.czdbData ? normalizeCzdbFilm(JSON.parse(cached.czdbData)) : null;
   let csfdRating = cached?.csfdRating ?? null;
   let csfdUrl = cached?.csfdUrl ?? null;
+  // Špatně napárovaný záznam z cache (starší pravidla) se dohledá znovu hned.
+  const cachedInvalid =
+    czdbFilm !== null &&
+    !isValidCzdbMatch(czdbFilm, {
+      tmdbId,
+      imdbId: movieData.imdb_id,
+      year,
+      titles: [movieData.title, movieData.original_title, getEnglishTitle(movieData), getCzechTitle(movieData)],
+      directors,
+    });
 
-  // Re-resolve jen když je cache stará. Film bez shody v CZDB se nezkouší znovu
-  // při každém zobrazení karty (dřív to byly až 3 externí requesty pokaždé).
-  if (stale) {
-    const year = movieData.release_date?.slice(0, 4);
+  // Re-resolve jen když je cache stará nebo chybná. Film bez shody v CZDB se nezkouší
+  // znovu při každém zobrazení karty (dřív to byly až 3 externí requesty pokaždé).
+  if (stale || cachedInvalid) {
     const rejectedIds: number[] = cached?.rejectedCzdbIds
       ? JSON.parse(cached.rejectedCzdbIds)
       : [];
@@ -62,6 +74,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       year,
       imdbId: movieData.imdb_id,
       tmdbId,
+      directors,
       rejectedIds,
     });
 

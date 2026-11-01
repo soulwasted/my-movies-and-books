@@ -24,6 +24,9 @@ import { NextResponse } from "next/server";
 
 export const maxDuration = 60;
 
+/** Kolik filmů AI ukáže (chat i tlačítko); AI navrhne víc kvůli filtrování viděných. */
+const MOVIE_PICKS = 3;
+
 async function buildMovieProfile(userId: string, locale: "cs" | "en"): Promise<UserTasteProfile> {
   const prefs = await prisma.userPreferences.findUnique({ where: { userId } });
   const genreIds: number[] = prefs?.favoriteGenreIds
@@ -234,13 +237,13 @@ export async function POST(req: Request) {
     const excluded = new Set(profile.excludedTmdbIds);
 
     if (body.type === "recommend") {
-      const raw = await getRecommendations(profile, 5);
-      const response = await filterToCount(raw, excluded, profile.excludedTitles, 5);
+      const raw = await getRecommendations(profile, MOVIE_PICKS);
+      const response = await filterToCount(raw, excluded, profile.excludedTitles, MOVIE_PICKS);
       return NextResponse.json({ response, media: "movie" });
     }
 
-    const raw = await chatAboutMovies(message, profile, history);
-    const response = await filterToCount(raw, excluded, profile.excludedTitles, 8);
+    const raw = await chatAboutMovies(message, profile, history, MOVIE_PICKS);
+    const response = await filterToCount(raw, excluded, profile.excludedTitles, MOVIE_PICKS);
     return NextResponse.json({ response, media: "movie" });
   } catch (err) {
     console.error("[api/ai]", err);

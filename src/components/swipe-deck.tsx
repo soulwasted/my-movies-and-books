@@ -2,12 +2,10 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Eye, Heart, Flag, Sparkles, Star, ThumbsDown, Undo2 } from "lucide-react";
+import { Undo2 } from "lucide-react";
+import { MovieDecisionButtons } from "@/components/decision-buttons";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { RatingDialog } from "@/components/rating-dialog";
 import { ReportDataDialog } from "@/components/report-data-dialog";
 import { saveMovieAction, undoMovieAction, recordSeenMovieAction } from "@/lib/actions";
@@ -15,6 +13,7 @@ import type { MovieCardSummary } from "@/lib/movie-card";
 import type { TmdbMovieListItem } from "@/lib/tmdb";
 import { useSwipeQueue } from "@/lib/use-swipe-queue";
 import type { QueueMovie, QueueReason } from "@/lib/queue-types";
+import { MovieCardView } from "@/components/movie-card-view";
 
 async function fetchCardSummary(tmdbId: number): Promise<MovieCardSummary | null> {
   const res = await fetch(`/api/movies/${tmdbId}`, { credentials: "include" });
@@ -139,45 +138,14 @@ export function SwipeDeck({ locale }: { locale: string }) {
       )}
 
       <div className="sticky bottom-20 z-10 mt-4 rounded-2xl border border-border/60 bg-background/95 p-3 shadow-lg backdrop-blur-sm">
-        {/* Tři rozhodnutí se signálem vkusu, stejný vzhled pro všechna. */}
-        <div className="grid grid-cols-3 gap-2">
-          <Button
-            variant="outline"
-            disabled={actionsDisabled}
-            className="h-auto flex-col gap-1 py-3"
-            onClick={handleWatched}
-          >
-            <Star className="h-5 w-5" />
-            <span className="text-xs font-medium">{t("watched")}</span>
-          </Button>
-          <Button
-            variant="outline"
-            disabled={actionsDisabled}
-            className="h-auto flex-col gap-1 py-3"
-            onClick={handleWant}
-          >
-            <Heart className="h-5 w-5" />
-            <span className="text-xs font-medium">{t("want")}</span>
-          </Button>
-          <Button
-            variant="outline"
-            disabled={actionsDisabled}
-            className="h-auto flex-col gap-1 py-3"
-            onClick={handleNotInterested}
-          >
-            <ThumbsDown className="h-5 w-5" />
-            <span className="text-xs font-medium">{t("notInterested")}</span>
-          </Button>
-        </div>
-        {/* Přeskočit je neutrální: nic se nenaučí, film zůstane v historii nabídky. */}
-        <button
-          type="button"
+        {/* Pořadí a význam tlačítek drží MovieDecisionButtons, stejné ve všech pohledech. */}
+        <MovieDecisionButtons
+          variant="bar"
           disabled={actionsDisabled}
-          onClick={handleSkip}
-          className="mt-2 w-full text-center text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
-        >
-          {t("skip")}
-        </button>
+          onDecide={(d) =>
+            d === "WANT" ? handleWant() : d === "WATCHED" ? handleWatched() : d === "NOT_INTERESTED" ? handleNotInterested() : handleSkip()
+          }
+        />
       </div>
 
       <RatingDialog
@@ -217,26 +185,6 @@ function CardSkeleton() {
   );
 }
 
-function ReasonChip({ reason }: { reason: QueueReason }) {
-  const t = useTranslations("swipe");
-  const text =
-    reason.type === "ai"
-      ? t("reasonAi", { text: reason.text })
-      : reason.type === "because"
-        ? t("reasonBecause", { title: reason.title })
-        : reason.type === "person"
-          ? t("reasonPerson", { name: reason.name })
-          : reason.type === "genres"
-          ? t("reasonGenres", { genres: reason.names.join(", ") })
-          : t("reasonExplore");
-  return (
-    <p className="flex items-center gap-1.5 text-xs text-primary">
-      <Sparkles className="h-3.5 w-3.5 shrink-0" />
-      <span>{text}</span>
-    </p>
-  );
-}
-
 function SwipeCard({
   card,
   reason,
@@ -248,9 +196,6 @@ function SwipeCard({
   locale: string;
   onReport: () => void;
 }) {
-  const t = useTranslations("movie");
-  const tReport = useTranslations("report");
-
   return (
     <motion.div
       className="rounded-2xl border border-border/50 bg-card shadow-2xl"
@@ -259,120 +204,7 @@ function SwipeCard({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
     >
-      <div className="flex flex-col sm:flex-row sm:items-start">
-        <Link
-          href={`/${locale}/movie/${card.tmdbId}`}
-          className="relative flex shrink-0 items-center justify-center bg-muted/40 p-3 sm:w-40 md:w-44"
-        >
-          <div className="relative aspect-[2/3] w-full max-w-[140px] sm:max-w-none sm:w-full">
-            {card.poster ? (
-              <Image
-                src={card.poster}
-                alt={card.czechTitle}
-                fill
-                sizes="(min-width: 768px) 176px, (min-width: 640px) 160px, 140px"
-                className="rounded-lg object-contain"
-                priority
-                unoptimized
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                No poster
-              </div>
-            )}
-          </div>
-        </Link>
-
-        <div className="flex min-w-0 flex-1 flex-col gap-3 p-4 sm:p-5">
-          <div className="flex items-start justify-between gap-2">
-            <Link href={`/${locale}/movie/${card.tmdbId}`} className="min-w-0 flex-1">
-              <h2 className="text-xl font-bold leading-snug sm:text-2xl">{card.czechTitle}</h2>
-              {card.originalTitle !== card.czechTitle && (
-                <p className="mt-1 text-sm text-muted-foreground">{card.originalTitle}</p>
-              )}
-            </Link>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="shrink-0 gap-1 text-xs text-muted-foreground"
-              onClick={onReport}
-            >
-              <Flag className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{tReport("button")}</span>
-            </Button>
-          </div>
-
-          {reason && <ReasonChip reason={reason} />}
-
-          {card.genres.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {card.genres.slice(0, 4).map((genre) => (
-                <Badge key={genre} variant="outline" className="text-xs font-normal">
-                  {genre}
-                </Badge>
-              ))}
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-center gap-2">
-            {card.year && <span className="text-sm text-muted-foreground">{card.year}</span>}
-            {card.runtime && (
-              <span className="text-sm text-muted-foreground">{card.runtime} min</span>
-            )}
-            <Badge variant="secondary" className="text-xs">
-              IMDb {card.voteAverage.toFixed(1)}
-            </Badge>
-            {card.csfdRating != null && (
-              <Badge variant="outline" className="text-xs">
-                ČSFD {card.csfdRating}%
-              </Badge>
-            )}
-          </div>
-
-          {card.overview ? (
-            <div className="text-sm">
-              <span className="font-medium text-foreground">{t("overview")}: </span>
-              <p className="mt-1 leading-relaxed text-muted-foreground">{card.overview}</p>
-            </div>
-          ) : null}
-
-          {card.directors.length > 0 && (
-            <p className="text-sm">
-              <span className="font-medium text-foreground">{t("director")}: </span>
-              <span className="text-muted-foreground">{card.directors.join(", ")}</span>
-            </p>
-          )}
-
-          {card.writers.length > 0 && (
-            <p className="text-sm">
-              <span className="font-medium text-foreground">{t("writer")}: </span>
-              <span className="text-muted-foreground">{card.writers.join(", ")}</span>
-            </p>
-          )}
-
-          {card.composers.length > 0 && (
-            <p className="text-sm">
-              <span className="font-medium text-foreground">{t("composer")}: </span>
-              <span className="text-muted-foreground">{card.composers.join(", ")}</span>
-            </p>
-          )}
-
-          {card.cast.length > 0 && (
-            <p className="text-sm">
-              <span className="font-medium text-foreground">{t("cast")}: </span>
-              <span className="text-muted-foreground">{card.cast.join(", ")}</span>
-            </p>
-          )}
-
-          <Link
-            href={`/${locale}/movie/${card.tmdbId}`}
-            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-          >
-            <Eye className="h-3.5 w-3.5" />
-            {t("detailLink")}
-          </Link>
-        </div>
-      </div>
+      <MovieCardView card={card} reason={reason} locale={locale} onReport={onReport} priority />
     </motion.div>
   );
 }

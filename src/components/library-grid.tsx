@@ -4,13 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Heart, Star, ThumbsDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { StarRatingDisplay } from "@/components/star-rating-display";
 import { RatingDialog } from "@/components/rating-dialog";
 import { saveMovieAction } from "@/lib/actions";
 import { choiceToggleStyles } from "@/lib/choice-toggle-styles";
-import { cn } from "@/lib/utils";
+import { MovieDecisionButtons, type MovieDecision } from "@/components/decision-buttons";
 import type { MovieMeta } from "@/app/api/movies/meta/route";
 
 type Item = {
@@ -22,7 +21,7 @@ type Item = {
   updatedAt: string | Date;
 };
 
-type Decision = "WATCHED" | "WANT" | "NOT_INTERESTED";
+type Decision = MovieDecision;
 
 const STATUS_KEYS: Record<string, string> = {
   SEEN: "statusSeen",
@@ -68,7 +67,6 @@ export function LibraryGrid({
   showStatus?: boolean;
 }) {
   const t = useTranslations("library");
-  const tSwipe = useTranslations("swipe");
   const [meta, setMeta] = useState<Record<number, MovieMeta>>({});
   const [statusOverride, setStatusOverride] = useState<Record<number, string>>({});
   const [filter, setFilter] = useState<Filter>("ALL");
@@ -196,31 +194,14 @@ export function LibraryGrid({
               </Link>
 
               {showStatus && (
-                <div className="grid grid-cols-3 border-t border-border/50">
-                  {(
-                    [
-                      ["WATCHED", Star, tSwipe("watched")],
-                      ["WANT", Heart, tSwipe("want")],
-                      ["NOT_INTERESTED", ThumbsDown, tSwipe("notInterested")],
-                    ] as const
-                  ).map(([value, Icon, label]) => (
-                    <button
-                      key={value}
-                      type="button"
-                      title={label}
-                      aria-label={label}
-                      onClick={() =>
-                        value === "WATCHED" ? setRatingFor(item.tmdbId) : decide(item.tmdbId, value)
-                      }
-                      className={cn(
-                        "flex items-center justify-center py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-                        status === value && "text-primary",
-                      )}
-                    >
-                      <Icon className={cn("h-4 w-4", status === value && "fill-current")} />
-                    </button>
-                  ))}
-                </div>
+                <MovieDecisionButtons
+                  variant="icons"
+                  status={status}
+                  onDecide={(value) =>
+                    value === "WATCHED" ? setRatingFor(item.tmdbId) : decide(item.tmdbId, value)
+                  }
+                  className="border-t border-border/50 px-1 py-1"
+                />
               )}
             </div>
           );

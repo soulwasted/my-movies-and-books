@@ -3,14 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { EyeOff, Heart, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { BookDecisionButtons, type BookDecision } from "@/components/decision-buttons";
 import { RatingDialog } from "@/components/rating-dialog";
 import { saveBookAction } from "@/lib/actions";
 import type { AiMovieRecommendation } from "@/lib/ai";
 
-type BookStatus = "READ" | "WANT" | "SKIPPED";
+type BookStatus = BookDecision;
 
 async function resolveVolumeId(
   title: string,
@@ -41,7 +40,6 @@ export function AiBookRecommendationCard({
   rec: AiMovieRecommendation;
   locale: string;
 }) {
-  const t = useTranslations("bookSwipe");
   const tAi = useTranslations("ai");
   const author = rec.author ?? "";
   const [volumeId, setVolumeId] = useState<string | null>(rec.volumeId ?? null);
@@ -96,8 +94,6 @@ export function AiBookRecommendationCard({
     }
   };
 
-  const handleSkip = () => applyStatus("SKIPPED");
-  const handleWant = () => applyStatus("WANT");
   const handleRead = async () => {
     setNotFound(false);
     const id = await ensureId();
@@ -159,38 +155,13 @@ export function AiBookRecommendationCard({
           <p className="mt-2 text-xs text-destructive">{tAi("bookNotFound")}</p>
         )}
 
-        <div className="mt-3 grid grid-cols-3 gap-1.5">
-          <Button
-            variant={status === "SKIPPED" ? "default" : "outline"}
-            size="sm"
-            disabled={disabled}
-            className="h-auto flex-col gap-0.5 px-1 py-2 text-[10px] sm:text-xs"
-            onClick={handleSkip}
-          >
-            <EyeOff className="h-3.5 w-3.5" />
-            {t("skip")}
-          </Button>
-          <Button
-            variant={status === "READ" ? "default" : "outline"}
-            size="sm"
-            disabled={disabled}
-            className="h-auto flex-col gap-0.5 px-1 py-2 text-[10px] sm:text-xs"
-            onClick={handleRead}
-          >
-            <Star className="h-3.5 w-3.5" />
-            {t("read")}
-          </Button>
-          <Button
-            variant={status === "WANT" ? "default" : "outline"}
-            size="sm"
-            disabled={disabled}
-            className="h-auto flex-col gap-0.5 px-1 py-2 text-[10px] sm:text-xs"
-            onClick={handleWant}
-          >
-            <Heart className="h-3.5 w-3.5" />
-            {t("want")}
-          </Button>
-        </div>
+        <BookDecisionButtons
+          variant="compact"
+          status={status}
+          disabled={disabled}
+          onDecide={(d) => (d === "READ" ? handleRead() : applyStatus(d))}
+          className="mt-3"
+        />
       </div>
 
       <RatingDialog

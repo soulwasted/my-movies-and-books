@@ -7,7 +7,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getPersonDetails, getPersonCraftFilms, profileUrl, posterUrl, isTmdbConfigured } from "@/lib/tmdb";
 import { explainPersonFilms, formatAiResponseText } from "@/lib/ai";
 import { FavoritePersonButton } from "@/components/favorite-person-button";
-import { Check, Heart } from "lucide-react";
+import { Bookmark, Check } from "lucide-react";
 
 export default async function PersonPage({
   params,
@@ -102,7 +102,7 @@ export default async function PersonPage({
               {status === "WATCHED" ? (
                 <Check className="size-3.5 text-primary" />
               ) : (
-                <Heart className="size-3.5 fill-primary text-primary" />
+                <Bookmark className="size-3.5 fill-primary text-primary" />
               )}
             </span>
           )}

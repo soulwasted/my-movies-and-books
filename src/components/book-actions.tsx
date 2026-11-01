@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
 import { RatingDialog } from "@/components/rating-dialog";
 import { StarRatingDisplay } from "@/components/star-rating-display";
 import { saveBookAction } from "@/lib/actions";
 import { normalizeToScale } from "@/lib/rating";
-import { Heart, Check, ThumbsDown } from "lucide-react";
+import { BookDecisionButtons } from "@/components/decision-buttons";
 
 type UserBook = {
   status: string;
@@ -23,7 +21,6 @@ export function BookActions({
   userBook: UserBook;
   locale: string;
 }) {
-  const t = useTranslations("bookSwipe");
   const [status, setStatus] = useState(userBook?.status ?? null);
   const [rating, setRating] = useState<number | null>(userBook?.rating ?? null);
   const [ratingType, setRatingType] = useState<string | null>(
@@ -68,27 +65,11 @@ export function BookActions({
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
-        <Button
-          variant={status === "READ" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setRatingOpen(true)}
-        >
-          <Check className="mr-1 h-4 w-4" /> {t("read")}
-        </Button>
-        <Button
-          variant={status === "WANT" ? "default" : "outline"}
-          size="sm"
-          onClick={() => update("WANT")}
-        >
-          <Heart className="mr-1 h-4 w-4" /> {t("want")}
-        </Button>
-        <Button
-          variant={status === "NOT_INTERESTED" ? "default" : "outline"}
-          size="sm"
-          onClick={() => update("NOT_INTERESTED")}
-        >
-          <ThumbsDown className="mr-1 h-4 w-4" /> {t("notInterested")}
-        </Button>
+        <BookDecisionButtons
+          variant="inline"
+          status={status}
+          onDecide={(d) => (d === "READ" ? setRatingOpen(true) : update(d))}
+        />
         {rating != null && status === "READ" && (
           <button
             type="button"

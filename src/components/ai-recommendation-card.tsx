@@ -3,15 +3,17 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { EyeOff, Heart, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { RatingDialog } from "@/components/rating-dialog";
 import { saveMovieAction } from "@/lib/actions";
 import type { AiMovieRecommendation } from "@/lib/ai";
 import type { TmdbMovieListItem } from "@/lib/tmdb";
+import type { MovieCardSummary } from "@/lib/movie-card";
+import { MovieCardView } from "@/components/movie-card-view";
+import { Skeleton } from "@/components/ui/skeleton";
+import { MovieDecisionButtons, type MovieDecision } from "@/components/decision-buttons";
 
-type MovieStatus = "WATCHED" | "WANT" | "SKIPPED";
+type MovieStatus = MovieDecision;
 
 function pickBestMatch(results: TmdbMovieListItem[], year: number): TmdbMovieListItem | null {
   if (results.length === 0) return null;
@@ -31,10 +33,10 @@ function cleanTitle(title: string, year: number): string {
     .trim();
 }
 
-async function resolveTmdbId(title: string, year: number): Promise<number | null> {
-  const queries = [cleanTitle(title, year), title.trim()].filter(
-    (q, i, arr) => q && arr.indexOf(q) === i,
-  );
+async function resolveTmdbId(title: string, year: number, originalTitle?: string): Promise<number | null> {
+  const queries = [originalTitle, title]
+    .flatMap((t) => (t ? [cleanTitle(t, year), t.trim()] : []))
+    .filter((q, i, arr) => q && arr.indexOf(q) === i);
 
   for (const query of queries) {
     const params = new URLSearchParams({ q: query, year: String(year) });
@@ -65,7 +67,6 @@ export function AiRecommendationCard({
   rec: AiMovieRecommendation;
   locale: string;
 }) {
-  const t = useTranslations("swipe");
   const tAi = useTranslations("ai");
   const [tmdbId, setTmdbId] = useState<number | null>(rec.tmdbId ?? null);
   const [status, setStatus] = useState<MovieStatus | null>(null);
@@ -74,6 +75,8 @@ export function AiRecommendationCard({
   const [notFound, setNotFound] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
   const [ratingTmdbId, setRatingTmdbId] = useState<number | null>(null);
+  const [card, setCard] = useState<MovieCardSummary | null>(null);
+  const [cardFailed, setCardFailed] = useState(false);
 
   useEffect(() => {
     // Server už film dohledal při filtrování, není co řešit.
@@ -82,7 +85,7 @@ export function AiRecommendationCard({
     (async () => {
       setResolving(true);
       setNotFound(false);
-      const id = await resolveTmdbId(rec.title, rec.year);
+      const id = await resolveTmdbId(rec.title, rec.year, rec.originalTitle);
       if (cancelled) return;
       setTmdbId(id);
       setNotFound(!id);
@@ -91,17 +94,34 @@ export function AiRecommendationCard({
     return () => {
       cancelled = true;
     };
-  }, [rec.title, rec.year, rec.tmdbId]);
+  }, [rec.title, rec.year, rec.originalTitle, rec.tmdbId]);
+
+  // Stejná data jako karta ve swipe frontě (plakát, hodnocení, tvůrci, popis).
+  useEffect(() => {
+    if (!tmdbId) return;
+    let cancelled = false;
+    fetch(`/api/movies/${tmdbId}`, { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.card) setCard(data.card as MovieCardSummary);
+        else setCardFailed(true);
+      })
+      .catch(() => !cancelled && setCardFailed(true));
+    return () => {
+      cancelled = true;
+    };
+  }, [tmdbId]);
 
   const ensureId = useCallback(async () => {
     if (tmdbId) return tmdbId;
     setResolving(true);
-    const id = await resolveTmdbId(rec.title, rec.year);
+    const id = await resolveTmdbId(rec.title, rec.year, rec.originalTitle);
     setTmdbId(id);
     setNotFound(!id);
     setResolving(false);
     return id;
-  }, [rec.title, rec.year, tmdbId]);
+  }, [rec.title, rec.year, rec.originalTitle, tmdbId]);
 
   const applyStatus = async (newStatus: MovieStatus) => {
     setActing(true);
@@ -119,8 +139,6 @@ export function AiRecommendationCard({
     }
   };
 
-  const handleSkip = () => applyStatus("SKIPPED");
-  const handleWant = () => applyStatus("WANT");
   const handleWatched = async () => {
     setNotFound(false);
     const id = await ensureId();
@@ -146,6 +164,62 @@ export function AiRecommendationCard({
   };
 
   const disabled = resolving || acting;
+
+  const loadingCard = (resolving || !!tmdbId) && !notFound && !cardFailed;
+
+  const actions = (
+    <MovieDecisionButtons
+      variant="compact"
+      status={status}
+      disabled={disabled}
+      onDecide={(d) => (d === "WATCHED" ? handleWatched() : applyStatus(d))}
+      className={card || loadingCard ? "mt-1" : "mt-3"}
+    />
+  );
+
+  if (card) {
+    return (
+      <>
+        <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
+          <MovieCardView card={card} reason={{ type: "ai", text: rec.reason }} locale={locale} compact>
+            {status && (
+              <Badge variant="outline" className="w-fit text-[10px] text-emerald-500">
+                {tAi("saved")}
+              </Badge>
+            )}
+            {actions}
+          </MovieCardView>
+        </div>
+        <RatingDialog open={ratingOpen} onOpenChange={setRatingOpen} onSave={handleRatingSave} />
+      </>
+    );
+  }
+
+  // Karta se dotahuje: kostra ve tvaru hotové karty, název a důvod od AI už známe.
+  if (loadingCard) {
+    return (
+      <>
+        <div className="overflow-hidden rounded-xl border border-border/60 bg-card" aria-busy="true">
+          <div className="flex gap-3 p-3">
+            <Skeleton className="aspect-[2/3] w-20 shrink-0 self-start rounded-md sm:w-24" />
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <h3 className="text-base font-semibold leading-snug text-foreground">{rec.title}</h3>
+              <Skeleton className="h-3 w-2/5" />
+              <div className="flex gap-1.5">
+                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <p className="text-xs leading-relaxed text-muted-foreground">{rec.reason}</p>
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-4/5" />
+              {actions}
+            </div>
+          </div>
+        </div>
+        <RatingDialog open={ratingOpen} onOpenChange={setRatingOpen} onSave={handleRatingSave} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -180,38 +254,7 @@ export function AiRecommendationCard({
           <p className="mt-2 text-xs text-destructive">{tAi("movieNotFound")}</p>
         )}
 
-        <div className="mt-3 grid grid-cols-3 gap-1.5">
-          <Button
-            variant={status === "SKIPPED" ? "default" : "outline"}
-            size="sm"
-            disabled={disabled}
-            className="h-auto flex-col gap-0.5 px-1 py-2 text-[10px] sm:text-xs"
-            onClick={handleSkip}
-          >
-            <EyeOff className="h-3.5 w-3.5" />
-            {t("skip")}
-          </Button>
-          <Button
-            variant={status === "WATCHED" ? "default" : "outline"}
-            size="sm"
-            disabled={disabled}
-            className="h-auto flex-col gap-0.5 px-1 py-2 text-[10px] sm:text-xs"
-            onClick={handleWatched}
-          >
-            <Star className="h-3.5 w-3.5" />
-            {t("watched")}
-          </Button>
-          <Button
-            variant={status === "WANT" ? "default" : "outline"}
-            size="sm"
-            disabled={disabled}
-            className="h-auto flex-col gap-0.5 px-1 py-2 text-[10px] sm:text-xs"
-            onClick={handleWant}
-          >
-            <Heart className="h-3.5 w-3.5" />
-            {t("want")}
-          </Button>
-        </div>
+        {actions}
       </div>
 
       <RatingDialog

@@ -63,7 +63,11 @@ export default async function MoviePage({
   let czdb: CzdbFilm | null = cached?.czdbData ? normalizeCzdbFilm(JSON.parse(cached.czdbData)) : null;
 
   const tmdbTitles = [movie.title, movie.original_title, getEnglishTitle(movie), getCzechTitle(movie)];
-  if (czdb && !isValidCzdbMatch(czdb, { tmdbId, imdbId: movie.imdb_id, year, titles: tmdbTitles })) {
+  const directorNames = getDirectors(movie).map((d) => d.name);
+  if (
+    czdb &&
+    !isValidCzdbMatch(czdb, { tmdbId, imdbId: movie.imdb_id, year, titles: tmdbTitles, directors: directorNames })
+  ) {
     czdb = null;
   }
 
@@ -85,6 +89,7 @@ export default async function MoviePage({
       year,
       imdbId: movie.imdb_id,
       tmdbId,
+      directors: directorNames,
       rejectedIds,
     });
     if (czdb) {

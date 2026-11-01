@@ -4,6 +4,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getUserStats } from "@/lib/actions";
 import { formatScale } from "@/lib/rating";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { booksEnabled } from "@/lib/features";
 
 export default async function StatsPage({
   params,
@@ -59,6 +60,8 @@ export default async function StatsPage({
         )}
       </div>
 
+      {booksEnabled && (
+      <>
       <h2 className="mb-3 mt-8 text-lg font-semibold">{t("booksSection")}</h2>
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
@@ -94,6 +97,8 @@ export default async function StatsPage({
           </Card>
         )}
       </div>
+      </>
+      )}
     </main>
   );
 }

@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { BookOpen, Flag, Heart, Star, ThumbsDown, Undo2 } from "lucide-react";
+import { BookOpen, Flag, Undo2 } from "lucide-react";
+import { BookDecisionButtons } from "@/components/decision-buttons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RatingDialog } from "@/components/rating-dialog";
@@ -148,45 +149,14 @@ export function BookSwipeDeck({ locale }: { locale: string }) {
       )}
 
       <div className="sticky bottom-20 z-10 mt-4 rounded-2xl border border-border/60 bg-background/95 p-3 shadow-lg backdrop-blur-sm">
-        {/* Tři rozhodnutí se signálem vkusu, stejný vzhled pro všechna. */}
-        <div className="grid grid-cols-3 gap-2">
-          <Button
-            variant="outline"
-            disabled={actionsDisabled}
-            className="h-auto flex-col gap-1 py-3"
-            onClick={handleRead}
-          >
-            <Star className="h-5 w-5" />
-            <span className="text-xs font-medium">{t("read")}</span>
-          </Button>
-          <Button
-            variant="outline"
-            disabled={actionsDisabled}
-            className="h-auto flex-col gap-1 py-3"
-            onClick={handleWant}
-          >
-            <Heart className="h-5 w-5" />
-            <span className="text-xs font-medium">{t("want")}</span>
-          </Button>
-          <Button
-            variant="outline"
-            disabled={actionsDisabled}
-            className="h-auto flex-col gap-1 py-3"
-            onClick={handleNotInterested}
-          >
-            <ThumbsDown className="h-5 w-5" />
-            <span className="text-xs font-medium">{t("notInterested")}</span>
-          </Button>
-        </div>
-        {/* Přeskočit je neutrální: nic se nenaučí, film zůstane v historii nabídky. */}
-        <button
-          type="button"
+        {/* Pořadí a význam tlačítek drží BookDecisionButtons, stejné ve všech pohledech. */}
+        <BookDecisionButtons
+          variant="bar"
           disabled={actionsDisabled}
-          onClick={handleSkip}
-          className="mt-2 w-full text-center text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
-        >
-          {t("skip")}
-        </button>
+          onDecide={(d) =>
+            d === "WANT" ? handleWant() : d === "READ" ? handleRead() : d === "NOT_INTERESTED" ? handleNotInterested() : handleSkip()
+          }
+        />
       </div>
 
       <RatingDialog
@@ -262,7 +232,7 @@ function BookSwipeCard({
               />
             ) : (
               <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                No cover
+                {t("noCover")}
               </div>
             )}
           </div>

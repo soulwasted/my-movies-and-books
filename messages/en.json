@@ -36,9 +36,6 @@
     "minCategories": "Select at least 3 categories"
   },
   "swipe": {
-    "watched": "Watched",
-    "want": "Want to watch",
-    "skip": "Skip",
     "noMore": "That's all for today — more picks tomorrow!",
     "rateTitle": "How did you like it?",
     "notes": "Notes (optional)",
@@ -49,7 +46,6 @@
     "save": "Save",
     "todayPicks": "Today's picks",
     "undo": "Undo last movie",
-    "notInterested": "Not for me",
     "reasonBecause": "Similar to {title}",
     "reasonGenres": "Matches your taste: {genres}",
     "reasonExplore": "Exploring outside your bubble",
@@ -57,12 +53,8 @@
     "reasonPerson": "Because you like {name}"
   },
   "bookSwipe": {
-    "read": "Read",
-    "want": "Want to read",
-    "skip": "Skip",
     "noMore": "That's all for today — more books tomorrow!",
-    "undo": "Undo last book",
-    "notInterested": "Not for me"
+    "undo": "Undo last book"
   },
   "movie": {
     "director": "Director",
@@ -82,7 +74,9 @@
     "csfd": "ČSFD",
     "similar": "Similar movies",
     "aiWhy": "Why you might like it",
-    "detailLink": "Movie details"
+    "detailLink": "Movie details",
+    "aiThinking": "AI is thinking…",
+    "noPoster": "No poster"
   },
   "book": {
     "authors": "Authors",
@@ -93,7 +87,8 @@
     "czechTitle": "Czech title",
     "databazeKnih": "Databáze knih",
     "aiWhy": "Why you might like it",
-    "detailLink": "Book details"
+    "detailLink": "Book details",
+    "noCover": "No cover"
   },
   "report": {
     "button": "Report error",
@@ -136,12 +131,12 @@
     "bookHistoryEmpty": "No history yet — books are saved as they pass through your feed.",
     "historyHint": "Everything the queue has shown you. Filter by status and decide again right from the card.",
     "bookHistoryHint": "Every book from your feed, including skipped ones. Tap to open details or rate.",
-    "statusSeen": "In feed",
+    "statusSeen": "Shown",
     "statusSkipped": "Skipped",
     "statusWant": "Want to watch",
     "statusWatched": "Watched",
     "statusRead": "Read",
-    "statusNotInterested": "Not interested",
+    "statusNotInterested": "Not for me",
     "filterAll": "All",
     "people": "People",
     "peopleEmpty": "No favourite people yet. Open an actor or director from a movie and tap the heart.",
@@ -176,21 +171,48 @@
     "colorScheme": "Mode",
     "schemeDark": "Dark",
     "schemeLight": "Light",
-    "fontTheme": "Font theme"
+    "fontTheme": "Font theme",
+    "loaderStyle": "Loading",
+    "loaderPreview": "Preview"
+  },
+  "loader": {
+    "names": {
+      "classic": "Classic",
+      "comet": "Comet",
+      "easing": "Easing bar",
+      "countdown": "Countdown 3·2·1",
+      "old-print": "Old print",
+      "mini-clap": "Mini clapper",
+      "slate": "Slate",
+      "typewriter": "Typewriter",
+      "terminal": "Terminal",
+      "decode": "Decode"
+    },
+    "scene": "SCENE",
+    "shot": "SHOT",
+    "director": "DIRECTOR: AI · FILM: YOUR NEXT",
+    "steps": [
+      "Reading your ratings",
+      "Skipping what you know",
+      "Finding similar creators",
+      "Fine-tuning the last pick"
+    ]
   },
   "ai": {
     "title": "AI Assistant",
     "placeholder": "What to watch tonight? Something like Blade Runner…",
     "placeholderBook": "What to read? Something like Dune…",
     "send": "Send",
-    "recommend": "Recommend 5 movies",
+    "recommend": "Recommend 3 movies",
     "recommendBooks": "Recommend 5 books",
     "movies": "Movies",
     "books": "Books",
     "noResults": "No recommendations.",
     "saved": "Saved",
     "movieNotFound": "Could not find this movie in the database.",
-    "bookNotFound": "Could not find this book in the database."
+    "bookNotFound": "Could not find this book in the database.",
+    "thinking": "Picking, this takes a moment…",
+    "loadingCard": "Loading movie details…"
   },
   "common": {
     "loading": "Loading…",
@@ -210,5 +232,19 @@
     "filter_all": "All",
     "filter_unseen": "Unseen",
     "otherCredits": "Other credits"
+  },
+  "decision": {
+    "movie": {
+      "want": "Want to watch",
+      "done": "Watched",
+      "no": "Not for me",
+      "later": "Skip"
+    },
+    "book": {
+      "want": "Want to read",
+      "done": "Read",
+      "no": "Not for me",
+      "later": "Skip"
+    }
   }
 }

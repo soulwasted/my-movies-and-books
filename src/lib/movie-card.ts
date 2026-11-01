@@ -65,6 +65,7 @@ export function buildMovieCardSummary(
       imdbId: movie.imdb_id,
       year: movie.release_date?.slice(0, 4),
       titles: [movie.title, movie.original_title, getEnglishTitle(movie), getCzechTitle(movie)],
+      directors: getDirectors(movie).map((d) => d.name),
     });
 
   const trustedCzdb = czdbTrusted ? czdb : null;

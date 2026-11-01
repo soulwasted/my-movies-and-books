@@ -69,7 +69,7 @@ Vztah: legacy stav `SKIPPED` = Přeskočit (neutrální).
 
 | isc | type | check | threshold | tool | anchors_to |
 |-----|------|-------|-----------|------|------------|
-| ISC-10 | ui | na kartě 3 tlačítka + odkaz Přeskočit | přesně 3 + 1 | browser read_page | principal_stated_goal |
+| ISC-10 | ui | na kartě 4 rovnocenná tlačítka | přesně 4 | browser read_page | principal_stated_goal |
 | ISC-11 | sql | `NOT_INTERESTED` v obou enumech | 2 hodnoty | prisma migrate diff = prázdný | principal_stated_goal |
 | ISC-12 | bun-test | Přeskočit nezmění váhy modelu | Δ = 0 | bun test taste-model | principal_stated_goal |
 | ISC-14 | bun-test | 9/10 film zvedne váhu svých žánrů, Nezajímá mě sníží | znaménko | bun test taste-model | principal_stated_goal |
@@ -107,7 +107,7 @@ Why: aby chytrost nestála rychlost a nerozbila to, co už funguje.
 
 ### F1 · Tři rozhodnutí + Přeskočit
 Why: čistý signál — každé tlačítko říká jednu věc o vkusu, odložení neříká nic.
-- [x] ISC-10: Karta má tlačítka Viděl, Chci vidět, Nezajímá mě (stejný vzhled) a textový odkaz Přeskočit; knihy obdobně (Přečteno, Chci číst, Nezajímá mě, Přeskočit).
+- [x] ISC-10: Karta má 4 rovnocenná tlačítka Chci vidět, Viděl jsem, Nezajímá mě, Přeskočit; knihy obdobně (Chci číst, Přečetl jsem, Nezajímá mě, Přeskočit). Názvy sjednocuje `ISA-kompas.md` ISC-K1.
 - [x] ISC-11: Enum `NOT_INTERESTED` existuje v `MovieStatus` i `BookStatus` v produkční DB.
 - [x] ISC-12: Přeskočit ukládá `SKIPPED` a model vkusu ho bere jako neutrální.
 - [x] ISC-13: Knihovna zobrazuje stav „Nezajímá mě“ a umí ho vrátit (změnit rozhodnutí).
@@ -153,6 +153,8 @@ Why: nic, co mi fronta ukázala, se neztratí — můžu se vrátit a rozhodnout
 - 2026-10-31 — F4 postavena na existující záložce Historie v Knihovně (ne nová stránka): filtr podle stavu + tři ikony rozhodnutí na kartě. Knihy zatím bez inline rozhodnutí (Google Books mrtvé).
 - 2026-10-31 — refined: ISC-24 — chat profil doplňuje, nenahrazuje; dynamický profil (seznamy, zakázané tituly) dál chrání před doporučením viděného.
 - 2026-10-31 — AI profil: `claude-sonnet-5-5`, effort `medium` (běží na pozadí, kvalita před rychlostí), první profil od 10 rozhodnutí, pak každých 20; ochrana proti souběhu per instance.
+- 2026-11-01 — UX/UI chování (navigace, slovník rozhodnutí, důvěra, knihovna, hledání) vede samostatné `ISA-kompas.md` (`parent: media-diary`). Revize našla rozpor: necommitnutý `decision-buttons.tsx` má 4 rovnocenná tlačítka (Chci vidět, Viděl jsem, Nechci vidět, Možná později), ne 3 + odkaz Přeskočit, jak tvrdí ISC-10. ISC-10 se opraví po rozhodnutí kanonu (fog v Kompasu).
+- 2026-11-01 — refined: ISC-10 — pepę zvolil 4 rovnocenná tlačítka (Chci vidět, Viděl jsem, Nezajímá mě, Přeskočit). Rozhodnutí z 2026-10-31 o 3 + odkazu je tím nahrazené; Přeskočit zůstává neutrální.
 - 2026-10-31 — Dvouvrstvá architektura doporučování: deterministický model vkusu (rychlý, každé načtení) + AI profil (pomalý, na pozadí). LLM per karta zamítnuto kvůli odezvě a ceně.
 
 ## Learning

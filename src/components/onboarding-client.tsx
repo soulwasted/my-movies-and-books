@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { savePreferencesAction } from "@/lib/actions";
 import { cn } from "@/lib/utils";
+import { booksEnabled } from "@/lib/features";
 
 type Genre = { id: number; name: string };
 type Category = { id: string; name: string };
@@ -33,7 +34,9 @@ export function OnboardingClient({
   useEffect(() => {
     Promise.all([
       fetch("/api/genres").then((r) => r.json()),
-      fetch(`/api/book-categories?locale=${locale}`).then((r) => r.json()),
+      booksEnabled
+        ? fetch(`/api/book-categories?locale=${locale}`).then((r) => r.json())
+        : Promise.resolve({ categories: [] }),
     ])
       .then(([genreData, catData]) => {
         setGenres(genreData.genres ?? []);
@@ -56,16 +59,22 @@ export function OnboardingClient({
 
   const handleContinueStep1 = () => {
     if (selectedGenres.length < 3) return;
+    // Bez knih je žánrový krok poslední (ISA-kompas ISC-K12).
+    if (!booksEnabled) {
+      void handleFinish();
+      return;
+    }
     setStep(2);
   };
 
   const handleFinish = async () => {
-    if (selectedCategories.length < 3) return;
+    if (booksEnabled && selectedCategories.length < 3) return;
     setSaving(true);
     try {
       await savePreferencesAction({
         favoriteGenreIds: selectedGenres,
-        favoriteBookCategoryIds: selectedCategories,
+        // Vypnuté knihy: undefined = dosavadní kategorie v DB zůstanou beze změny.
+        favoriteBookCategoryIds: booksEnabled ? selectedCategories : undefined,
         locale,
         onboardingComplete: true,
       });
@@ -87,7 +96,9 @@ export function OnboardingClient({
   if (step === 1) {
     return (
       <main className="flex flex-1 flex-col px-4 pb-28 pt-8">
-        <p className="text-xs text-muted-foreground">{t("step", { current: 1, total: 2 })}</p>
+        {booksEnabled && (
+          <p className="text-xs text-muted-foreground">{t("step", { current: 1, total: 2 })}</p>
+        )}
         <h1 className="mt-1 text-2xl font-bold">{t("title")}</h1>
         <p className="mt-2 text-muted-foreground">{t("subtitle")}</p>
 
@@ -114,10 +125,10 @@ export function OnboardingClient({
         <Button
           className="mt-auto"
           size="lg"
-          disabled={selectedGenres.length < 3}
+          disabled={selectedGenres.length < 3 || saving}
           onClick={handleContinueStep1}
         >
-          {t("continue")}
+          {booksEnabled ? t("continue") : t("finish")}
         </Button>
       </main>
     );

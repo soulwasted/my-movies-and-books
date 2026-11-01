@@ -25,6 +25,8 @@ export type UserTasteProfile = {
 
 export type AiMovieRecommendation = {
   title: string;
+  /** Originální nebo anglický název pro dohledání v TMDB (title bývá česky). */
+  originalTitle?: string;
   year: number;
   genre: string;
   reason: string;
@@ -46,6 +48,9 @@ const ResponseSchema = z.object({
   recommendations: z.array(
     z.object({
       title: z.string(),
+      originalTitle: z
+        .string()
+        .describe("Original title, or the English international title for non-Latin originals; used for database lookup"),
       year: z.number().int(),
       genre: z.string(),
       reason: z.string().describe("One sentence why it fits"),
@@ -69,7 +74,8 @@ function notConfigured(locale: "cs" | "en"): AiStructuredResponse {
 function profileBlock(profile: UserTasteProfile): string {
   const excludedList =
     profile.excludedTitles
-      .slice(0, 80)
+      // Celý seznam: když se ořízl, AI doporučovala viděné filmy a filtr z 9 nechal 2.
+      .slice(0, 400)
       .map((m) => `${m.title} (${m.year})`)
       .join(", ") || (profile.locale === "cs" ? "žádné" : "none");
 
@@ -131,9 +137,13 @@ export async function getRecommendations(
   const system =
     profile.locale === "cs"
       ? `Jsi filmový kurátor v aplikaci Media Diary.
-Doporučuj konkrétní filmy s rokem. Striktně vynech filmy ze seznamu ZAKÁZANÉ tituly — uživatel je už viděl nebo má v seznamu chci vidět.`
+Doporučuj konkrétní existující filmy s rokem.
+Striktně vynech filmy ze seznamu ZAKÁZANÉ tituly — uživatel je už viděl nebo má v seznamu chci vidět.
+V summary neuváděj počet filmů, část se jich ještě odfiltruje.`
       : `You are a film curator for Media Diary.
-Recommend specific movies with year. Strictly exclude FORBIDDEN titles — already watched or on wishlist.`;
+Recommend specific, real movies with year.
+Strictly exclude FORBIDDEN titles — already watched or on wishlist.
+Do not state how many movies you recommend in the summary; some get filtered out.`;
 
   const prompt =
     profile.locale === "cs"
@@ -147,6 +157,8 @@ export async function chatAboutMovies(
   message: string,
   profile: UserTasteProfile,
   history: AiChatTurn[] = [],
+  /** Kolik filmů uživatel uvidí; AI navrhne o pár víc, část odfiltrují viděné. */
+  count = 3,
 ): Promise<AiStructuredResponse> {
   if (!client) return notConfigured(profile.locale);
 
@@ -156,11 +168,13 @@ export async function chatAboutMovies(
 Profil uživatele:
 ${profileBlock(profile)}
 Odpovídej v češtině. Pokud uživatel nechce doporučení, nech recommendations prázdné a odpověz v summary.
+Když doporučuješ, navrhni ${count + 3} filmů (uživatel uvidí ${count}, zbytek je rezerva pro filtrování) a v summary neuváděj jejich počet.
 Nikdy nedoporučuj filmy ze seznamu ZAKÁZANÉ tituly.`
       : `You are a personal movie assistant for Media Diary.
 User profile:
 ${profileBlock(profile)}
 Reply in English. If the user doesn't want picks, leave recommendations empty and answer in summary.
+When recommending, suggest ${count + 3} movies (the user sees ${count}, the rest is a buffer for filtering) and do not state the count in the summary.
 Never recommend movies from the FORBIDDEN titles list.`;
 
   return callStructured(system, message, history);

@@ -6,6 +6,8 @@ import { LibraryGrid } from "@/components/library-grid";
 import { BookLibraryGrid } from "@/components/book-library-grid";
 import { FavoritePeopleGrid } from "@/components/favorite-people-grid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { booksEnabled } from "@/lib/features";
+import { cn } from "@/lib/utils";
 
 export default async function LibraryPage({
   params,
@@ -48,9 +50,9 @@ export default async function LibraryPage({
       <h1 className="text-2xl font-bold">{t("all")}</h1>
 
       <Tabs defaultValue="movies" className="mt-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className={cn("grid w-full", booksEnabled ? "grid-cols-3" : "grid-cols-2")}>
           <TabsTrigger value="movies">{t("movies")}</TabsTrigger>
-          <TabsTrigger value="books">{t("books")}</TabsTrigger>
+          {booksEnabled && <TabsTrigger value="books">{t("books")}</TabsTrigger>}
           <TabsTrigger value="people">
             {t("people")} ({people.length})
           </TabsTrigger>
@@ -96,6 +98,7 @@ export default async function LibraryPage({
           </Tabs>
         </TabsContent>
 
+        {booksEnabled && (
         <TabsContent value="books" className="mt-4">
           <Tabs defaultValue="history">
             <TabsList className="grid w-full grid-cols-3">
@@ -135,6 +138,7 @@ export default async function LibraryPage({
             </TabsContent>
           </Tabs>
         </TabsContent>
+        )}
 
         <TabsContent value="people" className="mt-4">
           {people.length === 0 ? (

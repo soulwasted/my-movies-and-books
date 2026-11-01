@@ -65,7 +65,7 @@ function notConfigured(locale: "cs" | "en"): AiBookStructuredResponse {
 function profileBlock(profile: UserBookTasteProfile): string {
   const excludedList =
     profile.excludedTitles
-      .slice(0, 80)
+      .slice(0, 400)
       .map((b) => `${b.title} — ${b.author} (${b.year})`)
       .join(", ") || (profile.locale === "cs" ? "žádné" : "none");
 
