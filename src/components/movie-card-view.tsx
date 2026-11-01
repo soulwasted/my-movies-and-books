@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Eye, Flag, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { FavoritePersonHeart } from "@/components/favorite-person-button";
 import type { MovieCardSummary } from "@/lib/movie-card";
 import type { QueueReason } from "@/lib/queue-types";
 
@@ -27,6 +28,37 @@ export function ReasonChip({ reason }: { reason: QueueReason }) {
       <Sparkles className="h-3.5 w-3.5 shrink-0" />
       <span>{text}</span>
     </p>
+  );
+}
+
+/** Jména prolinkovaná na stránku člověka se srdíčkem; jméno jen z CZDB zůstane textem. */
+function PeopleList({ names, card, locale }: { names: string[]; card: MovieCardSummary; locale: string }) {
+  const favorites = new Set(card.favoritePersonIds ?? []);
+  return (
+    <span className="text-muted-foreground">
+      {names.map((name, i) => {
+        const person = card.people?.[name.toLowerCase()];
+        return (
+          <span key={name}>
+            {i > 0 && ", "}
+            {person ? (
+              <>
+                <Link href={`/${locale}/person/${person.tmdbPersonId}`} className="underline-offset-4 hover:text-foreground hover:underline">
+                  {name}
+                </Link>
+                <FavoritePersonHeart
+                  person={person}
+                  initialFavorite={favorites.has(person.tmdbPersonId)}
+                  className="ml-1 size-3.5 -translate-y-px align-middle"
+                />
+              </>
+            ) : (
+              name
+            )}
+          </span>
+        );
+      })}
+    </span>
   );
 }
 
@@ -190,28 +222,28 @@ export function MovieCardView({
         {card.directors.length > 0 && (
           <p className="text-sm">
             <span className="font-medium text-foreground">{t("director")}: </span>
-            <span className="text-muted-foreground">{card.directors.join(", ")}</span>
+            <PeopleList names={card.directors} card={card} locale={locale} />
           </p>
         )}
 
         {card.writers.length > 0 && (
           <p className="text-sm">
             <span className="font-medium text-foreground">{t("writer")}: </span>
-            <span className="text-muted-foreground">{card.writers.join(", ")}</span>
+            <PeopleList names={card.writers} card={card} locale={locale} />
           </p>
         )}
 
         {card.composers.length > 0 && (
           <p className="text-sm">
             <span className="font-medium text-foreground">{t("composer")}: </span>
-            <span className="text-muted-foreground">{card.composers.join(", ")}</span>
+            <PeopleList names={card.composers} card={card} locale={locale} />
           </p>
         )}
 
         {card.cast.length > 0 && (
           <p className="text-sm">
             <span className="font-medium text-foreground">{t("cast")}: </span>
-            <span className="text-muted-foreground">{card.cast.join(", ")}</span>
+            <PeopleList names={card.cast} card={card} locale={locale} />
           </p>
         )}
 

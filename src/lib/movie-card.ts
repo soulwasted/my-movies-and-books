@@ -26,7 +26,13 @@ export type MovieCardSummary = {
   voteAverage: number;
   csfdRating: number | null;
   genres: string[];
+  /** TMDB lidé podle jména malými písmeny: jméno na kartě se z nich prolinkuje a dá se oblíbit. */
+  people: Record<string, CardPerson>;
+  /** Oblíbení lidé přihlášeného uživatele (doplní API, ne builder). */
+  favoritePersonIds?: number[];
 };
+
+export type CardPerson = { tmdbPersonId: number; name: string; profilePath: string | null; department: string };
 
 function firstText(...values: (string | null | undefined)[]): string {
   for (const value of values) {
@@ -70,6 +76,18 @@ export function buildMovieCardSummary(
 
   const trustedCzdb = czdbTrusted ? czdb : null;
 
+  // Profese z tohoto filmu, stejně jako na detailu: režisér se oblíbí jako režie.
+  const people: Record<string, CardPerson> = {};
+  const addPeople = (list: { id: number; name: string; profile_path: string | null }[], department: string) => {
+    for (const p of list) {
+      people[p.name.toLowerCase()] ??= { tmdbPersonId: p.id, name: p.name, profilePath: p.profile_path, department };
+    }
+  };
+  addPeople(getDirectors(movie), "Directing");
+  addPeople(getWriters(movie), "Writing");
+  addPeople(getComposers(movie), "Sound");
+  addPeople(movie.credits.cast.slice(0, 12), "Acting");
+
   return {
     tmdbId: movie.id,
     czechTitle:
@@ -105,5 +123,6 @@ export function buildMovieCardSummary(
     genres: movie.genres?.length
       ? movie.genres.map((g) => g.name)
       : splitPeople(trustedCzdb?.zanr),
+    people,
   };
 }

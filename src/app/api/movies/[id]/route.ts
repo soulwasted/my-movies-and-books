@@ -111,15 +111,19 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const userId = await getSessionUserId();
   let userMovie = null;
+  let favoritePersonIds: number[] = [];
   if (userId) {
-    userMovie = await prisma.userMovie.findUnique({
-      where: { userId_tmdbId: { userId, tmdbId } },
-    });
+    const [movieRow, favoriteRows] = await Promise.all([
+      prisma.userMovie.findUnique({ where: { userId_tmdbId: { userId, tmdbId } } }),
+      prisma.favoritePerson.findMany({ where: { userId }, select: { tmdbPersonId: true } }),
+    ]);
+    userMovie = movieRow;
+    favoritePersonIds = favoriteRows.map((f) => f.tmdbPersonId);
   }
 
   return NextResponse.json({
     movie: movieData,
-    card: buildMovieCardSummary(movieData, czdbFilm, csfdRating),
+    card: { ...buildMovieCardSummary(movieData, czdbFilm, csfdRating), favoritePersonIds },
     csfdRating,
     csfdUrl,
     czdb: czdbFilm,

@@ -112,7 +112,7 @@ export function SwipeDeck({ locale }: { locale: string }) {
 
   return (
     <>
-      <div className="relative mx-auto w-full max-w-2xl flex-1">
+      <div className="relative mx-auto w-full max-w-2xl rounded-2xl border border-border/50 bg-card shadow-2xl">
         <AnimatePresence mode="wait" initial={false}>
           {currentCard ? (
             <SwipeCard
@@ -126,6 +126,17 @@ export function SwipeDeck({ locale }: { locale: string }) {
             <CardSkeleton key={`loading-${current.id}`} />
           )}
         </AnimatePresence>
+        {/* Rozhodnutí patří ke kartě: jeden rámeček, lišta je její spodek a na mobilu drží u okraje. */}
+        <div className="sticky bottom-20 z-10 rounded-b-2xl border-t border-border/50 bg-card/95 p-3 backdrop-blur-sm">
+          {/* Pořadí a význam tlačítek drží MovieDecisionButtons, stejné ve všech pohledech. */}
+          <MovieDecisionButtons
+            variant="bar"
+            disabled={actionsDisabled}
+            onDecide={(d) =>
+              d === "WANT" ? handleWant() : d === "WATCHED" ? handleWatched() : d === "NOT_INTERESTED" ? handleNotInterested() : handleSkip()
+            }
+          />
+        </div>
       </div>
 
       {undo && (
@@ -136,17 +147,6 @@ export function SwipeDeck({ locale }: { locale: string }) {
           </Button>
         </div>
       )}
-
-      <div className="sticky bottom-20 z-10 mt-4 rounded-2xl border border-border/60 bg-background/95 p-3 shadow-lg backdrop-blur-sm">
-        {/* Pořadí a význam tlačítek drží MovieDecisionButtons, stejné ve všech pohledech. */}
-        <MovieDecisionButtons
-          variant="bar"
-          disabled={actionsDisabled}
-          onDecide={(d) =>
-            d === "WANT" ? handleWant() : d === "WATCHED" ? handleWatched() : d === "NOT_INTERESTED" ? handleNotInterested() : handleSkip()
-          }
-        />
-      </div>
 
       <RatingDialog
         open={!!ratingMovie}
@@ -168,7 +168,7 @@ export function SwipeDeck({ locale }: { locale: string }) {
 
 function CardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-2xl animate-pulse">
+    <div className="overflow-hidden rounded-t-2xl animate-pulse">
       <div className="flex flex-col sm:flex-row">
         <div className="flex shrink-0 items-center justify-center bg-muted/40 p-3 sm:w-44 md:w-52">
           <div className="aspect-[2/3] w-full max-w-[160px] rounded-lg bg-muted sm:max-w-none" />
@@ -198,7 +198,7 @@ function SwipeCard({
 }) {
   return (
     <motion.div
-      className="rounded-2xl border border-border/50 bg-card shadow-2xl"
+      className="overflow-hidden rounded-t-2xl"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

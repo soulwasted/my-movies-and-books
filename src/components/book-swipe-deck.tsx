@@ -124,7 +124,7 @@ export function BookSwipeDeck({ locale }: { locale: string }) {
 
   return (
     <>
-      <div className="relative mx-auto w-full max-w-2xl flex-1">
+      <div className="relative mx-auto w-full max-w-2xl rounded-2xl border border-border/50 bg-card shadow-2xl">
         <AnimatePresence mode="wait" initial={false}>
           {currentCard ? (
             <BookSwipeCard
@@ -137,6 +137,17 @@ export function BookSwipeDeck({ locale }: { locale: string }) {
             <BookCardSkeleton key={`loading-${current.id}`} />
           )}
         </AnimatePresence>
+        {/* Rozhodnutí patří ke kartě: jeden rámeček, lišta je její spodek a na mobilu drží u okraje. */}
+        <div className="sticky bottom-20 z-10 rounded-b-2xl border-t border-border/50 bg-card/95 p-3 backdrop-blur-sm">
+          {/* Pořadí a význam tlačítek drží BookDecisionButtons, stejné ve všech pohledech. */}
+          <BookDecisionButtons
+            variant="bar"
+            disabled={actionsDisabled}
+            onDecide={(d) =>
+              d === "WANT" ? handleWant() : d === "READ" ? handleRead() : d === "NOT_INTERESTED" ? handleNotInterested() : handleSkip()
+            }
+          />
+        </div>
       </div>
 
       {undo && (
@@ -147,17 +158,6 @@ export function BookSwipeDeck({ locale }: { locale: string }) {
           </Button>
         </div>
       )}
-
-      <div className="sticky bottom-20 z-10 mt-4 rounded-2xl border border-border/60 bg-background/95 p-3 shadow-lg backdrop-blur-sm">
-        {/* Pořadí a význam tlačítek drží BookDecisionButtons, stejné ve všech pohledech. */}
-        <BookDecisionButtons
-          variant="bar"
-          disabled={actionsDisabled}
-          onDecide={(d) =>
-            d === "WANT" ? handleWant() : d === "READ" ? handleRead() : d === "NOT_INTERESTED" ? handleNotInterested() : handleSkip()
-          }
-        />
-      </div>
 
       <RatingDialog
         open={!!ratingBook}
@@ -179,7 +179,7 @@ export function BookSwipeDeck({ locale }: { locale: string }) {
 
 function BookCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-2xl animate-pulse">
+    <div className="overflow-hidden rounded-t-2xl animate-pulse">
       <div className="flex flex-col sm:flex-row">
         <div className="flex shrink-0 items-center justify-center bg-muted/40 p-3 sm:w-44 md:w-52">
           <div className="aspect-[2/3] w-full max-w-[160px] rounded-lg bg-muted sm:max-w-none" />
@@ -208,7 +208,7 @@ function BookSwipeCard({
 
   return (
     <motion.div
-      className="rounded-2xl border border-border/50 bg-card shadow-2xl"
+      className="overflow-hidden rounded-t-2xl"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
