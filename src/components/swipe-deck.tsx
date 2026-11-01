@@ -204,7 +204,7 @@ function SwipeCard({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
     >
-      <MovieCardView card={card} reason={reason} locale={locale} onReport={onReport} priority />
+      <MovieCardView card={card} level="card" reason={reason} locale={locale} onReport={onReport} priority />
     </motion.div>
   );
 }

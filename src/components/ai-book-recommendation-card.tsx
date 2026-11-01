@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { BookDecisionButtons, type BookDecision } from "@/components/decision-buttons";
 import { RatingDialog } from "@/components/rating-dialog";
 import { saveBookAction } from "@/lib/actions";
+import { BookCardView } from "@/components/book-card-view";
+import type { BookCardSummary } from "@/lib/book-card";
 import type { AiMovieRecommendation } from "@/lib/ai";
 
 type BookStatus = BookDecision;
@@ -49,6 +51,7 @@ export function AiBookRecommendationCard({
   const [notFound, setNotFound] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
   const [ratingVolumeId, setRatingVolumeId] = useState<string | null>(null);
+  const [card, setCard] = useState<BookCardSummary | null>(null);
 
   useEffect(() => {
     // Server už knihu dohledal při filtrování, není co řešit.
@@ -67,6 +70,19 @@ export function AiBookRecommendationCard({
       cancelled = true;
     };
   }, [rec.title, rec.year, author, rec.volumeId]);
+
+  // Stejná data jako karta ve swipe frontě; když se nenačtou, zůstane textová verze.
+  useEffect(() => {
+    if (!volumeId) return;
+    let cancelled = false;
+    fetch(`/api/books/${encodeURIComponent(volumeId)}`, { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => !cancelled && data?.card && setCard(data.card as BookCardSummary))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [volumeId]);
 
   const ensureId = useCallback(async () => {
     if (volumeId) return volumeId;
@@ -120,6 +136,34 @@ export function AiBookRecommendationCard({
 
   const disabled = resolving || acting;
 
+  const actions = (
+    <BookDecisionButtons
+      variant="compact"
+      status={status}
+      disabled={disabled}
+      onDecide={(d) => (d === "READ" ? handleRead() : applyStatus(d))}
+      className={card ? "mt-1" : "mt-3"}
+    />
+  );
+
+  if (card) {
+    return (
+      <>
+        <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
+          <BookCardView card={card} level="preview" reason={{ type: "ai", text: rec.reason }} locale={locale}>
+            {status && (
+              <Badge variant="outline" className="w-fit text-[10px] text-emerald-500">
+                {tAi("saved")}
+              </Badge>
+            )}
+            {actions}
+          </BookCardView>
+        </div>
+        <RatingDialog open={ratingOpen} onOpenChange={setRatingOpen} onSave={handleRatingSave} />
+      </>
+    );
+  }
+
   return (
     <>
       <div className="rounded-lg border border-border/60 bg-background/50 p-3">
@@ -155,13 +199,7 @@ export function AiBookRecommendationCard({
           <p className="mt-2 text-xs text-destructive">{tAi("bookNotFound")}</p>
         )}
 
-        <BookDecisionButtons
-          variant="compact"
-          status={status}
-          disabled={disabled}
-          onDecide={(d) => (d === "READ" ? handleRead() : applyStatus(d))}
-          className="mt-3"
-        />
+        {actions}
       </div>
 
       <RatingDialog

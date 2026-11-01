@@ -181,7 +181,7 @@ export function AiRecommendationCard({
     return (
       <>
         <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
-          <MovieCardView card={card} reason={{ type: "ai", text: rec.reason }} locale={locale} compact>
+          <MovieCardView card={card} reason={{ type: "ai", text: rec.reason }} locale={locale} level="preview">
             {status && (
               <Badge variant="outline" className="w-fit text-[10px] text-emerald-500">
                 {tAi("saved")}

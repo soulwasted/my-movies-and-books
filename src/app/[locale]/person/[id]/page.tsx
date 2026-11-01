@@ -2,11 +2,12 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getPersonDetails, getPersonCraftFilms, profileUrl, posterUrl, isTmdbConfigured } from "@/lib/tmdb";
 import { explainPersonFilms, formatAiResponseText } from "@/lib/ai";
 import { FavoritePersonButton } from "@/components/favorite-person-button";
+import { MovieTile } from "@/components/movie-card-view";
+import { TILE_GRID } from "@/components/media-tile";
 import { Bookmark, Check } from "lucide-react";
 
 export default async function PersonPage({
@@ -89,29 +90,28 @@ export default async function PersonPage({
   const filmCard = (film: (typeof films)[0]) => {
     const status = userMap.get(film.id);
     return (
-      <Link key={film.id} href={`/${locale}/movie/${film.id}`} className="group">
-        <div className="relative aspect-[2/3] overflow-hidden rounded-md bg-muted ring-1 ring-white/5">
-          <Image
-            src={posterUrl(film.poster_path, "w342")!}
-            alt=""
-            fill
-            className="object-cover transition-transform group-hover:scale-[1.03]"
-          />
-          {(status === "WATCHED" || status === "WANT") && (
-            <span className="absolute right-1.5 top-1.5 flex size-6 items-center justify-center rounded-full bg-background/80 backdrop-blur">
+      <MovieTile
+        key={film.id}
+        movie={{
+          tmdbId: film.id,
+          czechTitle: film.title,
+          poster: posterUrl(film.poster_path, "w342"),
+          year: film.release_date?.slice(0, 4) ?? null,
+        }}
+        meta={role(film)}
+        locale={locale}
+        badge={
+          (status === "WATCHED" || status === "WANT") && (
+            <span className="flex size-6 items-center justify-center rounded-full bg-background/80 backdrop-blur">
               {status === "WATCHED" ? (
                 <Check className="size-3.5 text-primary" />
               ) : (
                 <Bookmark className="size-3.5 fill-primary text-primary" />
               )}
             </span>
-          )}
-        </div>
-        <p className="mt-1.5 line-clamp-2 text-xs font-medium leading-snug">{film.title}</p>
-        <p className="line-clamp-1 text-[11px] text-muted-foreground">
-          {[film.release_date?.slice(0, 4), role(film)].filter(Boolean).join(" · ")}
-        </p>
-      </Link>
+          )
+        }
+      />
     );
   };
 
@@ -164,7 +164,7 @@ export default async function PersonPage({
             <h2 className="mb-3 text-sm font-semibold">
               {g.label} <span className="font-normal text-muted-foreground tabular-nums">{g.items.length}</span>
             </h2>
-            <div className="grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-5">
+            <div className={TILE_GRID}>
               {g.items
                 .filter((f) => f.poster_path)
                 .slice(0, g.key === "craft" ? 40 : 15)

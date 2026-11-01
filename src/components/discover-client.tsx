@@ -1,14 +1,15 @@
 "use client";
 
+import { TILE_GRID } from "@/components/media-tile";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import Image from "next/image";
-import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { posterUrl, type TmdbMovieListItem } from "@/lib/tmdb";
 import { coverUrl, type GoogleBookListItem } from "@/lib/google-books";
 import { booksEnabled } from "@/lib/features";
+import { MovieTile } from "@/components/movie-card-view";
+import { BookTile } from "@/components/book-card-view";
 
 function MovieSearch({ locale }: { locale: string }) {
   const t = useTranslations("discover");
@@ -42,29 +43,19 @@ function MovieSearch({ locale }: { locale: string }) {
         }}
       />
       {loading && <p className="text-sm text-muted-foreground">…</p>}
-      <div className="grid grid-cols-2 gap-3">
-        {results.map((movie) => {
-          const poster = posterUrl(movie.poster_path, "w342");
-          return (
-            <Link
-              key={movie.id}
-              href={`/${locale}/movie/${movie.id}`}
-              className="overflow-hidden rounded-xl border border-border/50 bg-card"
-            >
-              <div className="relative aspect-[2/3] bg-muted">
-                {poster && (
-                  <Image src={poster} alt={movie.title} fill className="object-cover" />
-                )}
-              </div>
-              <div className="p-2">
-                <p className="truncate text-sm font-medium">{movie.title}</p>
-                <p className="text-xs text-muted-foreground">
-                  {movie.release_date?.slice(0, 4)}
-                </p>
-              </div>
-            </Link>
-          );
-        })}
+      <div className={TILE_GRID}>
+        {results.map((movie) => (
+          <MovieTile
+            key={movie.id}
+            movie={{
+              tmdbId: movie.id,
+              czechTitle: movie.title,
+              poster: posterUrl(movie.poster_path, "w342"),
+              year: movie.release_date?.slice(0, 4) ?? null,
+            }}
+            locale={locale}
+          />
+        ))}
       </div>
     </div>
   );
@@ -104,29 +95,20 @@ function BookSearch({ locale }: { locale: string }) {
         }}
       />
       {loading && <p className="text-sm text-muted-foreground">…</p>}
-      <div className="grid grid-cols-2 gap-3">
-        {results.map((book) => {
-          const cover = coverUrl(book.cover, "small");
-          return (
-            <Link
-              key={book.id}
-              href={`/${locale}/book/${encodeURIComponent(book.id)}`}
-              className="overflow-hidden rounded-xl border border-border/50 bg-card"
-            >
-              <div className="relative aspect-[2/3] bg-muted">
-                {cover && (
-                  <Image src={cover} alt={book.title} fill className="object-cover" unoptimized />
-                )}
-              </div>
-              <div className="p-2">
-                <p className="truncate text-sm font-medium">{book.title}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {book.authors[0] ?? ""}
-                </p>
-              </div>
-            </Link>
-          );
-        })}
+      <div className={TILE_GRID}>
+        {results.map((book) => (
+          <BookTile
+            key={book.id}
+            book={{
+              googleVolumeId: book.id,
+              title: book.title,
+              cover: coverUrl(book.cover, "small"),
+              author: book.authors[0] ?? null,
+              year: book.publishedDate?.slice(0, 4) ?? null,
+            }}
+            locale={locale}
+          />
+        ))}
       </div>
     </div>
   );

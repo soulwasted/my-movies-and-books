@@ -1,8 +1,7 @@
 "use client";
 
+import { TILE_GRID } from "@/components/media-tile";
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { StarRatingDisplay } from "@/components/star-rating-display";
@@ -10,6 +9,7 @@ import { RatingDialog } from "@/components/rating-dialog";
 import { saveMovieAction } from "@/lib/actions";
 import { choiceToggleStyles } from "@/lib/choice-toggle-styles";
 import { MovieDecisionButtons, type MovieDecision } from "@/components/decision-buttons";
+import { MovieTile } from "@/components/movie-card-view";
 import type { MovieMeta } from "@/app/api/movies/meta/route";
 
 type Item = {
@@ -138,7 +138,7 @@ export function LibraryGrid({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className={TILE_GRID}>
         {visible.map((item) => {
           const m = meta[item.tmdbId];
           const status = statusOf(item);
@@ -146,64 +146,50 @@ export function LibraryGrid({
           const statusKey = STATUS_KEYS[status];
 
           return (
-            <div
+            <MovieTile
               key={`${item.tmdbId}-${item.updatedAt}`}
-              className="overflow-hidden rounded-xl border border-border/50 bg-card transition hover:border-primary/30"
-            >
-              <Link href={`/${locale}/movie/${item.tmdbId}`} className="block">
-                <div className="relative aspect-[2/3] bg-muted">
-                  {m?.poster ? (
-                    <Image
-                      src={m.poster}
-                      alt={m.title}
-                      fill
-                      sizes="(min-width: 640px) 200px, 50vw"
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                      …
-                    </div>
-                  )}
-                  {item.rating != null && status === "WATCHED" && (
-                    <div className="absolute right-2 top-2 rounded bg-black/70 px-1.5 py-0.5">
-                      <StarRatingDisplay rating={item.rating} ratingType={item.ratingType} size="sm" />
-                    </div>
-                  )}
-                  {showStatus && statusKey && (
-                    <div className="absolute bottom-2 left-2 right-2">
-                      <Badge variant="secondary" className="w-full justify-center text-[10px]">
-                        {t(statusKey)}
+              movie={{ tmdbId: item.tmdbId, czechTitle: m?.title ?? "…", poster: m?.poster ?? null, year: m?.year ?? null }}
+              locale={locale}
+              badge={
+                item.rating != null &&
+                status === "WATCHED" && (
+                  <div className="rounded bg-black/70 px-1.5 py-0.5">
+                    <StarRatingDisplay rating={item.rating} ratingType={item.ratingType} size="sm" />
+                  </div>
+                )
+              }
+              overlay={
+                showStatus &&
+                statusKey && (
+                  <Badge variant="secondary" className="w-full justify-center text-[10px]">
+                    {t(statusKey)}
+                  </Badge>
+                )
+              }
+              footer={
+                tags.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {tags.slice(0, 2).map((tag) => (
+                      <Badge key={tag} variant="outline" className="px-1 py-0 text-[10px]">
+                        {tag}
                       </Badge>
-                    </div>
-                  )}
-                </div>
-                <div className="p-2">
-                  <p className="truncate text-sm font-medium">{m?.title ?? `#${item.tmdbId}`}</p>
-                  {m?.year && <p className="text-xs text-muted-foreground">{m.year}</p>}
-                  {tags.length > 0 && (
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {tags.slice(0, 2).map((tag) => (
-                        <Badge key={tag} variant="outline" className="px-1 py-0 text-[10px]">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Link>
-
-              {showStatus && (
-                <MovieDecisionButtons
-                  variant="icons"
-                  status={status}
-                  onDecide={(value) =>
-                    value === "WATCHED" ? setRatingFor(item.tmdbId) : decide(item.tmdbId, value)
-                  }
-                  className="border-t border-border/50 px-1 py-1"
-                />
-              )}
-            </div>
+                    ))}
+                  </div>
+                )
+              }
+              actions={
+                showStatus && (
+                  <MovieDecisionButtons
+                    variant="icons"
+                    status={status}
+                    onDecide={(value) =>
+                      value === "WATCHED" ? setRatingFor(item.tmdbId) : decide(item.tmdbId, value)
+                    }
+                    className="border-t border-border/50 px-1 py-1"
+                  />
+                )
+              }
+            />
           );
         })}
       </div>

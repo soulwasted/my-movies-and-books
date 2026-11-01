@@ -2,17 +2,15 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { BookOpen, Flag, Undo2 } from "lucide-react";
+import { Undo2 } from "lucide-react";
 import { BookDecisionButtons } from "@/components/decision-buttons";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { RatingDialog } from "@/components/rating-dialog";
 import { ReportBookDialog } from "@/components/report-book-dialog";
 import { saveBookAction, undoBookAction, recordSeenBookAction } from "@/lib/actions";
 import type { BookCardSummary } from "@/lib/book-card";
+import { BookCardView } from "@/components/book-card-view";
 import type { GoogleBookListItem } from "@/lib/google-books";
 import { useSwipeQueue } from "@/lib/use-swipe-queue";
 
@@ -203,9 +201,6 @@ function BookSwipeCard({
   locale: string;
   onReport: () => void;
 }) {
-  const t = useTranslations("book");
-  const tReport = useTranslations("bookReport");
-
   return (
     <motion.div
       className="overflow-hidden rounded-t-2xl"
@@ -214,92 +209,7 @@ function BookSwipeCard({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
     >
-      <div className="flex flex-col sm:flex-row sm:items-start">
-        <Link
-          href={`/${locale}/book/${encodeURIComponent(card.googleVolumeId)}`}
-          className="relative flex shrink-0 items-center justify-center bg-muted/40 p-3 sm:w-40 md:w-44"
-        >
-          <div className="relative aspect-[2/3] w-full max-w-[140px] sm:max-w-none sm:w-full">
-            {card.cover ? (
-              <Image
-                src={card.cover}
-                alt={card.title}
-                fill
-                sizes="(min-width: 768px) 176px, (min-width: 640px) 160px, 140px"
-                className="rounded-lg object-contain"
-                priority
-                unoptimized
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                {t("noCover")}
-              </div>
-            )}
-          </div>
-        </Link>
-
-        <div className="flex min-w-0 flex-1 flex-col gap-3 p-4 sm:p-5">
-          <div className="flex items-start justify-between gap-2">
-            <Link
-              href={`/${locale}/book/${encodeURIComponent(card.googleVolumeId)}`}
-              className="min-w-0 flex-1"
-            >
-              <h2 className="text-xl font-bold leading-snug sm:text-2xl">{card.title}</h2>
-              {card.authors.length > 0 && (
-                <p className="mt-1 text-sm text-muted-foreground">{card.authors.join(", ")}</p>
-              )}
-            </Link>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="shrink-0 gap-1 text-xs text-muted-foreground"
-              onClick={onReport}
-            >
-              <Flag className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{tReport("button")}</span>
-            </Button>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {card.year && <span className="text-sm text-muted-foreground">{card.year}</span>}
-            {card.pageCount && (
-              <span className="text-sm text-muted-foreground">{card.pageCount} {t("pages")}</span>
-            )}
-            {card.averageRating != null && (
-              <Badge variant="secondary" className="text-xs">
-                ★ {card.averageRating.toFixed(1)}
-              </Badge>
-            )}
-          </div>
-
-          {card.overview ? (
-            <div className="text-sm">
-              <span className="font-medium text-foreground">{t("overview")}: </span>
-              <p className="mt-1 line-clamp-4 leading-relaxed text-muted-foreground">
-                {card.overview}
-              </p>
-            </div>
-          ) : null}
-
-          {card.categories.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {card.categories.slice(0, 3).map((c) => (
-                <Badge key={c} variant="outline" className="text-xs">
-                  {c}
-                </Badge>
-              ))}
-            </div>
-          )}
-
-          <Link
-            href={`/${locale}/book/${encodeURIComponent(card.googleVolumeId)}`}
-            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-          >
-            <BookOpen className="h-3.5 w-3.5" />
-            {t("detailLink")}
-          </Link>
-        </div>
-      </div>
+      <BookCardView card={card} level="card" locale={locale} onReport={onReport} priority />
     </motion.div>
   );
 }
