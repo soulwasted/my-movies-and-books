@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles, Send } from "lucide-react";
 import { AiResponseView } from "@/components/ai-response-view";
 import { ElapsedLoader } from "@/components/elapsed-loader";
+import { Chip } from "@/components/chat-chip";
 import type { AiStructuredResponse } from "@/lib/ai";
 import { booksEnabled } from "@/lib/features";
 
@@ -24,7 +25,7 @@ function responseAsText(response: AiStructuredResponse): string {
   return [response.summary, recs, response.followUp].filter(Boolean).join("\n\n");
 }
 
-export function AiChatClient({ locale }: { locale: string }) {
+export function AiChatClient({ locale, suggestions = [] }: { locale: string; suggestions?: string[] }) {
   const t = useTranslations("ai");
   const tCommon = useTranslations("common");
   const [media, setMedia] = useState<"movie" | "book">("movie");
@@ -87,11 +88,6 @@ export function AiChatClient({ locale }: { locale: string }) {
       </Tabs>
       )}
 
-      <Button variant="outline" onClick={recommend} disabled={loading}>
-        <Sparkles className="mr-2 h-4 w-4" />
-        {media === "book" ? t("recommendBooks") : t("recommend")}
-      </Button>
-
       <div className="flex-1 space-y-3 overflow-y-auto">
         {history.map((msg, i) => (
           <div
@@ -111,11 +107,27 @@ export function AiChatClient({ locale }: { locale: string }) {
                 data={msg.response}
                 locale={locale}
                 media={msg.media}
+                // Odpovědi na doptání jen u poslední zprávy, starší otázky už neplatí.
+                onReply={i === history.length - 1 && !loading ? send : undefined}
               />
             )}
           </div>
         ))}
         {loading && <ElapsedLoader label={t("thinking")} />}
+      </div>
+
+      {/* Návrhy dotazů podle vkusu; pro knihy zatím jen obecné doporučení. */}
+      <div className="flex flex-wrap gap-2">
+        <Chip onClick={recommend} disabled={loading}>
+          <Sparkles className="h-3.5 w-3.5" />
+          {media === "book" ? t("recommendBooks") : t("recommend")}
+        </Chip>
+        {media === "movie" &&
+          suggestions.map((s) => (
+            <Chip key={s} onClick={() => send(s)} disabled={loading}>
+              {s}
+            </Chip>
+          ))}
       </div>
 
       <div className="flex gap-2">

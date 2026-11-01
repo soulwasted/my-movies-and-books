@@ -4,15 +4,19 @@ import { useTranslations } from "next-intl";
 import type { AiStructuredResponse } from "@/lib/ai";
 import { AiRecommendationCard } from "@/components/ai-recommendation-card";
 import { AiBookRecommendationCard } from "@/components/ai-book-recommendation-card";
+import { Chip } from "@/components/chat-chip";
 
 export function AiResponseView({
   data,
   locale,
   media = "movie",
+  onReply,
 }: {
   data: AiStructuredResponse;
   locale: string;
   media?: "movie" | "book";
+  /** Pošle odpověď do chatu; bez něj se nabídnuté odpovědi neukážou. */
+  onReply?: (text: string) => void;
 }) {
   const t = useTranslations("ai");
 
@@ -38,6 +42,16 @@ export function AiResponseView({
 
       {data.followUp && (
         <p className="text-sm italic text-muted-foreground">{data.followUp}</p>
+      )}
+
+      {onReply && !!data.followUpOptions?.length && (
+        <div className="flex flex-wrap gap-2">
+          {data.followUpOptions.map((option) => (
+            <Chip key={option} onClick={() => onReply(option)} disabled={false}>
+              {option}
+            </Chip>
+          ))}
+        </div>
       )}
 
       {data.recommendations.length === 0 && !data.summary && (

@@ -33,6 +33,8 @@ export type AiBookStructuredResponse = {
   summary: string;
   recommendations: AiBookRecommendation[];
   followUp: string;
+  /** Krátké odpovědi na otázku ve followUp, klient je ukáže jako pills. */
+  followUpOptions?: string[];
 };
 
 /** Schéma odpovědi pro structured outputs (nový model nepodporuje vynucený tool_choice). */
@@ -48,6 +50,11 @@ const BookResponseSchema = z.object({
     }),
   ),
   followUp: z.string().describe("Optional closing question or tip, may be empty"),
+  followUpOptions: z
+    .array(z.string())
+    .describe(
+      "If followUp asks the user a question, 2-4 short clickable replies (max ~5 words) written as the user's own answer in the user's language, e.g. 'Ano, od Villeneuva', 'Spíš něco lehčího'. Empty array otherwise.",
+    ),
 });
 
 
@@ -198,5 +205,6 @@ export function bookResponseToGeneric(data: AiBookStructuredResponse): AiStructu
       volumeId: r.volumeId,
     })) as AiStructuredResponse["recommendations"],
     followUp: data.followUp,
+    followUpOptions: data.followUpOptions,
   };
 }
