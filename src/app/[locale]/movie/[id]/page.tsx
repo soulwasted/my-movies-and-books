@@ -38,6 +38,8 @@ import { BackdropReveal } from "@/components/backdrop-reveal";
 import { ReportMovieButton } from "@/components/report-movie-button";
 import { FavoritePersonHeart } from "@/components/favorite-person-button";
 import { TrailerPlayer } from "@/components/trailer-player";
+import { MovieTile } from "@/components/movie-card-view";
+import { TILE_GRID } from "@/components/media-tile";
 import { youtubeId } from "@/lib/youtube";
 import { ExternalLink } from "lucide-react";
 
@@ -210,7 +212,7 @@ export default async function MoviePage({
     ...czdbTrailerList.map((tr) => ({ key: youtubeId(tr.url) ?? tr.url, name: `${tr.name} (CZDB)`, url: tr.url })),
   ].filter((tr, i, all) => all.findIndex((o) => o.key === tr.key) === i);
 
-  const similar = getSimilarMovies(movie);
+  const similar = getSimilarMovies(movie, 6); // dvě plné řady dlaždic
 
   const pill =
     "inline-flex h-7 items-center gap-1.5 rounded-full border border-border px-3 text-xs font-medium tabular-nums";
@@ -395,22 +397,18 @@ export default async function MoviePage({
           {similar.length > 0 && (
             <section>
               <h2 className="mb-3 text-sm font-semibold">{t("similar")}</h2>
-              <div className="grid grid-cols-5 gap-2 sm:gap-3">
+              <div className={TILE_GRID}>
                 {similar.map((m) => (
-                  <Link key={m.id} href={`/${locale}/movie/${m.id}`} className="group min-w-0">
-                    <div className="relative aspect-[2/3] overflow-hidden rounded-md bg-muted ring-1 ring-white/5">
-                      <Image
-                        src={posterUrl(m.poster_path, "w342")!}
-                        alt={m.title}
-                        fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    </div>
-                    <p className="mt-1.5 line-clamp-2 text-[11px] font-medium leading-snug sm:text-xs">{m.title}</p>
-                    {m.release_date && (
-                      <p className="text-[11px] text-muted-foreground tabular-nums">{m.release_date.slice(0, 4)}</p>
-                    )}
-                  </Link>
+                  <MovieTile
+                    key={m.id}
+                    movie={{
+                      tmdbId: m.id,
+                      czechTitle: m.title,
+                      poster: posterUrl(m.poster_path, "w342"),
+                      year: m.release_date?.slice(0, 4) ?? null,
+                    }}
+                    locale={locale}
+                  />
                 ))}
               </div>
             </section>
