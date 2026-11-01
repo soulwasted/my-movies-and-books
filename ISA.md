@@ -177,7 +177,7 @@ Why: nic, co mi fronta ukázala, se neztratí — můžu se vrátit a rozhodnout
 
 ## Remaining Work
 
-- [ ] Vercel env: Clerk klíče z `awaited-lemming-75` — jinak produkce nenajde převedeného uživatele.
+- [x] Vercel env: Clerk klíče z `awaited-lemming-75` — jinak produkce nenajde převedeného uživatele.
 - [ ] Google Books API klíč vrací 403 (Books API zablokované na klíči) — opravit v Google Cloud; do té doby knihy mrtvé.
-- [ ] Commit F3 (AI profil, AI tipy, oprava dohledávání) — F1, F2, F4 jsou v 687a2bb.
-- [ ] Push na GitHub + Vercel deploy — až budou na Vercelu nové Clerk klíče.
+- [x] Commit F3 (AI profil, AI tipy, oprava dohledávání) — F1, F2, F4 jsou v 687a2bb.
+- [x] Push na GitHub + Vercel deploy — až budou na Vercelu nové Clerk klíče.
