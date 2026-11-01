@@ -254,6 +254,12 @@
       "lang_ru": "Ruské filmy"
     }
   },
+  "aiSteps": {
+    "profile": "Načítám tvoje hodnocení a seznamy",
+    "ask": "AI vybírá podle {rated} hodnocení, vynechá {excluded, plural, one {# titul} few {# tituly} other {# titulů}}",
+    "verify": "Ověřuji {count, plural, one {# tip} few {# tipy} other {# tipů}} v TMDB a vyřazuji viděné",
+    "verifyBooks": "Ověřuji {count, plural, one {# tip} few {# tipy} other {# tipů}} v Google Books a vyřazuji přečtené"
+  },
   "common": {
     "loading": "Načítám…",
     "error": "Něco se pokazilo",

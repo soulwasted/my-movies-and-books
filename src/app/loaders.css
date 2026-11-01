@@ -59,8 +59,8 @@
 
 /* 09, 09a — psací stroj, terminál */
 .ldr-caret { display: inline-block; width: .5em; height: 1.1em; margin-left: 1px; vertical-align: -.2em; background: var(--loader-accent); animation: ldr-caret 1s steps(1) infinite; }
-.ldr-term { display: flex; flex-direction: column; width: min(320px, 100%); padding: 10px 12px; border-radius: 8px; background: #0a0a0a; font: 400 12px/1.6 var(--font-mono), monospace; color: #a3a3a3; }
-.ldr-term > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ldr-term { display: flex; flex-direction: column; width: min(420px, 100%); padding: 10px 12px; border-radius: 8px; background: #0a0a0a; font: 400 12px/1.6 var(--font-mono), monospace; color: #a3a3a3; }
+.ldr-term > span { overflow-wrap: anywhere; }
 .ldr-term > span::before { content: "› "; color: #525252; }
 .ldr-term-ok { color: #4ade80; }
 .ldr-term-cur { color: #fafafa; }

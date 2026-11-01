@@ -16,7 +16,8 @@ function useElapsedMs() {
   return ms;
 }
 
-type VariantProps = { label: string; ms: number };
+/** `steps` = živé kroky ze serveru; bez nich (náhled v nastavení) jedou ukázkové hlášky. */
+type VariantProps = { label: string; ms: number; steps?: string[] };
 
 function Seconds({ ms }: { ms: number }) {
   return <span className="tabular-nums text-muted-foreground/70">{Math.floor(ms / 1000)} s</span>;
@@ -148,14 +149,16 @@ function Slate({ label, ms }: VariantProps) {
   );
 }
 
-function useSteps(label: string) {
+function useSteps(label: string, live?: string[]) {
   const t = useTranslations("loader");
+  if (live) return live.length ? live : [label];
   return [label, ...(t.raw("steps") as string[])];
 }
 
 /** 09 — psací stroj: píše věty, maže je a píše další. */
-function Typewriter({ label, ms }: VariantProps) {
-  const lines = useSteps(label);
+function Typewriter({ label, ms, steps }: VariantProps) {
+  const live = steps !== undefined;
+  const lines = useSteps(label, live ? [label] : undefined);
   const [text, setText] = useState("");
   const linesRef = useRef(lines);
   useEffect(() => {
@@ -172,6 +175,8 @@ function Typewriter({ label, ms }: VariantProps) {
       if (!deleting) {
         chars++;
         if (chars > current.length) {
+          // Živý krok zůstane napsaný, dokud server neohlásí další.
+          if (live) return;
           deleting = true;
           timer = setTimeout(tick, 1400);
           return;
@@ -189,7 +194,7 @@ function Typewriter({ label, ms }: VariantProps) {
     };
     tick();
     return () => clearTimeout(timer);
-  }, []);
+  }, [live]);
 
   return (
     <span className="flex items-center gap-2">
@@ -203,10 +208,12 @@ function Typewriter({ label, ms }: VariantProps) {
 }
 
 /** 09a — terminál: log kroků, každý se odškrtne. */
-function Terminal({ label }: VariantProps) {
-  const steps = useSteps(label);
+function Terminal({ label, steps: live }: VariantProps) {
+  const steps = useSteps(label, live);
   const [count, setCount] = useState(1);
+  const isLive = live !== undefined;
   useEffect(() => {
+    if (isLive) return;
     let timer: ReturnType<typeof setTimeout>;
     const next = () => {
       setCount((c) => c + 1);
@@ -214,13 +221,15 @@ function Terminal({ label }: VariantProps) {
     };
     timer = setTimeout(next, 900);
     return () => clearTimeout(timer);
-  }, []);
+  }, [isLive]);
 
-  const lines = Array.from({ length: count }, (_, i) => steps[i % steps.length]).slice(-4);
+  // Živé kroky: hotové jsou všechny kromě posledního, žádný časovač.
+  const total = live ? steps.length : count;
+  const lines = (live ? steps : Array.from({ length: count }, (_, i) => steps[i % steps.length])).slice(-4);
   return (
     <span className="ldr-term">
       {lines.map((line, i) => (
-        <span key={count - lines.length + i} className={i === lines.length - 1 ? "ldr-term-cur" : undefined}>
+        <span key={total - lines.length + i} className={i === lines.length - 1 ? "ldr-term-cur" : undefined}>
           {line}…{i < lines.length - 1 && <span className="ldr-term-ok"> ok</span>}
         </span>
       ))}
@@ -231,8 +240,9 @@ function Terminal({ label }: VariantProps) {
 const GLYPHS = "ABCDEFGHJKLMNOPRSTUVZ0123456789#%&*";
 
 /** 09b — náhodné znaky se zleva skládají do věty. */
-function Decode({ label, ms }: VariantProps) {
-  const steps = useSteps(label);
+function Decode({ label, ms, steps: live }: VariantProps) {
+  const isLive = live !== undefined;
+  const steps = useSteps(label, isLive ? [label] : undefined);
   const stepsRef = useRef(steps);
   useEffect(() => {
     stepsRef.current = steps;
@@ -252,6 +262,7 @@ function Decode({ label, ms }: VariantProps) {
       setState({ done: text.slice(0, done), rest });
       frame++;
       if (done >= text.length) {
+        if (isLive) return;
         phrase++;
         frame = 0;
         timer = setTimeout(tick, 1600);
@@ -261,7 +272,7 @@ function Decode({ label, ms }: VariantProps) {
     };
     tick();
     return () => clearTimeout(timer);
-  }, []);
+  }, [isLive]);
 
   return (
     <span className="flex items-center gap-2">
@@ -288,8 +299,10 @@ const VARIANTS: Record<LoaderId, (props: VariantProps) => React.ReactNode> = {
 };
 
 /** Vykreslí zvolený styl načítání s textem a počítadlem. */
-export function LoaderVariant({ id, label }: { id: LoaderId; label: string }) {
+export function LoaderVariant({ id, label, steps }: { id: LoaderId; label: string; steps?: string[] }) {
   const ms = useElapsedMs();
   const Variant = VARIANTS[id];
-  return <Variant label={label} ms={ms} />;
+  // Se živými kroky ukazují jednořádkové styly aktuální krok; nový krok = nová animace psaní.
+  const current = steps?.at(-1) ?? label;
+  return <Variant key={steps ? current : undefined} label={current} ms={ms} steps={steps} />;
 }

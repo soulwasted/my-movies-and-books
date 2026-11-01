@@ -11,6 +11,8 @@ import { ElapsedLoader } from "@/components/elapsed-loader";
 import { Chip } from "@/components/chat-chip";
 import type { AiStructuredResponse } from "@/lib/ai";
 import { booksEnabled } from "@/lib/features";
+import { fetchAi } from "@/lib/ai-stream";
+import { useAiSteps } from "@/components/use-ai-steps";
 
 type ChatMessage =
   | { role: "user"; text: string }
@@ -32,26 +34,17 @@ export function AiChatClient({ locale, suggestions = [] }: { locale: string; sug
   const [message, setMessage] = useState("");
   const [history, setHistory] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const aiSteps = useAiSteps();
 
   const ask = async (payload: Record<string, unknown>) => {
     setLoading(true);
+    aiSteps.reset();
     try {
-      const res = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locale, media, ...payload }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.response) {
-        setHistory((h) => [...h, { role: "error", text: data.error ?? tCommon("error") }]);
-        return;
-      }
-      setHistory((h) => [
-        ...h,
-        { role: "ai", response: data.response, media: data.media ?? media },
-      ]);
-    } catch {
-      setHistory((h) => [...h, { role: "error", text: tCommon("error") }]);
+      const data = await fetchAi({ locale, media, ...payload }, aiSteps.push);
+      setHistory((h) => [...h, { role: "ai", response: data.response, media: data.media }]);
+    } catch (err) {
+      const text = err instanceof Error && err.message ? err.message : tCommon("error");
+      setHistory((h) => [...h, { role: "error", text }]);
     } finally {
       setLoading(false);
     }
@@ -113,7 +106,7 @@ export function AiChatClient({ locale, suggestions = [] }: { locale: string; sug
             )}
           </div>
         ))}
-        {loading && <ElapsedLoader label={t("thinking")} />}
+        {loading && <ElapsedLoader label={t("thinking")} steps={aiSteps.labels} />}
       </div>
 
       {/* Návrhy dotazů podle vkusu; pro knihy zatím jen obecné doporučení. */}

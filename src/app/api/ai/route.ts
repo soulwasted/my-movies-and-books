@@ -21,6 +21,7 @@ import { normalizeToScale } from "@/lib/rating";
 import { sanitizeHistory } from "@/lib/ai-model";
 import { getTasteProfile } from "@/lib/taste-profile";
 import { NextResponse } from "next/server";
+import type { AiResult, AiStep, AiStreamEvent } from "@/lib/ai-stream";
 
 export const maxDuration = 60;
 
@@ -199,6 +200,37 @@ async function buildBookProfile(
   };
 }
 
+/**
+ * Odpoví NDJSON streamem: řádek za každý skutečný krok, na konci výsledek nebo chyba.
+ * Klient tak v loaderu ukazuje, co server právě dělá, místo vymyšlených hlášek.
+ */
+function streamSteps(
+  failure: string,
+  run: (step: (s: AiStep) => void) => Promise<AiResult>,
+): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (event: AiStreamEvent) =>
+        controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+      try {
+        const result = await run((step) => send({ type: "step", step }));
+        send({ type: "result", ...result });
+      } catch (err) {
+        console.error("[api/ai]", err);
+        send({ type: "error", error: failure });
+      }
+      controller.close();
+    },
+  });
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
 export async function POST(req: Request) {
   let userId: string;
   try {
@@ -217,44 +249,41 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid type" }, { status: 400 });
   }
 
-  try {
+  const failure =
+    locale === "cs"
+      ? "AI teď neodpovídá. Zkus to prosím za chvíli."
+      : "AI is not responding right now. Please try again shortly.";
+
+  return streamSteps(failure, async (step) => {
+    step({ id: "profile" });
+
     if (media === "book") {
       const profile = await buildBookProfile(userId, locale);
       const excluded = new Set(profile.excludedVolumeIds);
+      const count = body.type === "recommend" ? 5 : 8;
 
-      if (body.type === "recommend") {
-        const raw = await getBookRecommendations(profile, 5);
-        const filtered = await filterBookToCount(raw, excluded, profile.excludedTitles, 5);
-        return NextResponse.json({ response: bookResponseToGeneric(filtered), media: "book" });
-      }
+      step({ id: "ask", rated: profile.read.length, excluded: profile.excludedTitles.length });
+      const raw =
+        body.type === "recommend"
+          ? await getBookRecommendations(profile, 5)
+          : await chatAboutBooks(message, profile, history);
 
-      const raw = await chatAboutBooks(message, profile, history);
-      const filtered = await filterBookToCount(raw, excluded, profile.excludedTitles, 8);
-      return NextResponse.json({ response: bookResponseToGeneric(filtered), media: "book" });
+      step({ id: "verify", count: raw.recommendations.length, source: "books" });
+      const filtered = await filterBookToCount(raw, excluded, profile.excludedTitles, count);
+      return { response: bookResponseToGeneric(filtered), media: "book" };
     }
 
     const profile = await buildMovieProfile(userId, locale);
     const excluded = new Set(profile.excludedTmdbIds);
 
-    if (body.type === "recommend") {
-      const raw = await getRecommendations(profile, MOVIE_PICKS);
-      const response = await filterToCount(raw, excluded, profile.excludedTitles, MOVIE_PICKS);
-      return NextResponse.json({ response, media: "movie" });
-    }
+    step({ id: "ask", rated: profile.watched.length, excluded: profile.excludedTitles.length });
+    const raw =
+      body.type === "recommend"
+        ? await getRecommendations(profile, MOVIE_PICKS)
+        : await chatAboutMovies(message, profile, history, MOVIE_PICKS);
 
-    const raw = await chatAboutMovies(message, profile, history, MOVIE_PICKS);
+    step({ id: "verify", count: raw.recommendations.length, source: "tmdb" });
     const response = await filterToCount(raw, excluded, profile.excludedTitles, MOVIE_PICKS);
-    return NextResponse.json({ response, media: "movie" });
-  } catch (err) {
-    console.error("[api/ai]", err);
-    return NextResponse.json(
-      {
-        error:
-          locale === "cs"
-            ? "AI teď neodpovídá. Zkus to prosím za chvíli."
-            : "AI is not responding right now. Please try again shortly.",
-      },
-      { status: 502 },
-    );
-  }
+    return { response, media: "movie" };
+  });
 }

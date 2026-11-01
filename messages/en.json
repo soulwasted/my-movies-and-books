@@ -254,6 +254,12 @@
       "lang_ru": "Russian movies"
     }
   },
+  "aiSteps": {
+    "profile": "Loading your ratings and lists",
+    "ask": "AI is picking from {rated} ratings, skipping {excluded, plural, one {# title} other {# titles}}",
+    "verify": "Checking {count, plural, one {# pick} other {# picks}} on TMDB, dropping watched ones",
+    "verifyBooks": "Checking {count, plural, one {# pick} other {# picks}} on Google Books, dropping read ones"
+  },
   "common": {
     "loading": "Loading…",
     "error": "Something went wrong",

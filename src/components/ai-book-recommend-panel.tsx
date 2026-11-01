@@ -5,7 +5,10 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
 import { AiResponseView } from "@/components/ai-response-view";
+import { ElapsedLoader } from "@/components/elapsed-loader";
 import type { AiStructuredResponse } from "@/lib/ai";
+import { fetchAi } from "@/lib/ai-stream";
+import { useAiSteps } from "@/components/use-ai-steps";
 
 export function AiBookRecommendPanel({
   locale,
@@ -17,18 +20,19 @@ export function AiBookRecommendPanel({
   bookAuthor: string;
 }) {
   const t = useTranslations("book");
+  const tAi = useTranslations("ai");
   const [response, setResponse] = useState<AiStructuredResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const aiSteps = useAiSteps();
 
   const fetchWhy = async () => {
     setLoading(true);
     setError(null);
+    aiSteps.reset();
     try {
-      const res = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const data = await fetchAi(
+        {
           type: "chat",
           media: "book",
           locale,
@@ -36,16 +40,12 @@ export function AiBookRecommendPanel({
             locale === "cs"
               ? `Proč by se mi mohla líbit kniha "${bookTitle}" od ${bookAuthor}? A co podobného doporučíš?`
               : `Why might I like "${bookTitle}" by ${bookAuthor}? What similar books do you recommend?`,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.response) {
-        setError(data.error ?? "AI error");
-        return;
-      }
+        },
+        aiSteps.push,
+      );
       setResponse(data.response);
-    } catch {
-      setError("AI error");
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : "AI error");
     } finally {
       setLoading(false);
     }
@@ -60,6 +60,7 @@ export function AiBookRecommendPanel({
           AI
         </Button>
       </div>
+      {loading && <ElapsedLoader label={tAi("thinking")} steps={aiSteps.labels} className="mt-3" />}
       {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
       {response && (
         <div className="mt-3">
