@@ -177,7 +177,7 @@ Why: nic, co mi fronta ukázala, se neztratí — můžu se vrátit a rozhodnout
 
 ## Remaining Work
 
-- [x] Vercel env: Clerk klíče z `awaited-lemming-75` — jinak produkce nenajde převedeného uživatele.
+- [x] Clerk: lokál i Vercel na `resolved-spaniel-24`; 2026-11-01 účet převeden `user_3EmEDZ…` → `user_3EozV4m…` (`.backups/switch-user.mjs`, záloha v `.backups/`).
 - [ ] Google Books API klíč vrací 403 (Books API zablokované na klíči) — opravit v Google Cloud; do té doby knihy mrtvé.
 - [x] Commit F3 (AI profil, AI tipy, oprava dohledávání) — F1, F2, F4 jsou v 687a2bb.
 - [x] Push na GitHub + Vercel deploy — až budou na Vercelu nové Clerk klíče.
